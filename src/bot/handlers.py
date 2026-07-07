@@ -36,6 +36,11 @@ logger = logging.getLogger(__name__)
 ALL_BASIC_CHORDS = sorted(NOTE_NAMES + [n + "m" for n in NOTE_NAMES])
 ALL_EXTENDED_CHORDS = sorted(CHORD_SHAPES.keys())
 
+# Sentinel que viaja como si fuera "el acorde tocado" en el callback_data, pero
+# en vez de agregarse a la selección hace que el handler borre el último acorde
+# ya elegido (permite corregir un toque equivocado sin reiniciar la pregunta).
+UNDO_MARK = "⌫"
+
 
 def _allowed(func):
     @wraps(func)
@@ -58,11 +63,15 @@ def _image_to_bytes(img) -> io.BytesIO:
     return buf
 
 
-def _chords_keyboard(chords: list[str], data_prefix: str, columns: int) -> InlineKeyboardMarkup:
+def _chords_keyboard(
+    chords: list[str], data_prefix: str, columns: int, show_undo: bool = False
+) -> InlineKeyboardMarkup:
     """Teclado con TODOS los acordes posibles (sin filtrar los ya usados — una
     progresión puede repetir un acorde, ej. I-IV-I-V). data_prefix ya trae todo
     el estado necesario (índice de progresión/canción, tono destino, selección
-    acumulada); cada botón solo le agrega '|<acorde>' al tocarlo."""
+    acumulada); cada botón solo le agrega '|<acorde>' al tocarlo. Si show_undo
+    es True (hay al menos un acorde ya elegido) se agrega una fila final para
+    borrar el último toque sin perder el resto de la selección."""
     rows = []
     row = []
     for chord in chords:
@@ -72,6 +81,8 @@ def _chords_keyboard(chords: list[str], data_prefix: str, columns: int) -> Inlin
             row = []
     if row:
         rows.append(row)
+    if show_undo:
+        rows.append([InlineKeyboardButton("⌫ Borrar último", callback_data=f"{data_prefix}|{UNDO_MARK}")])
     return InlineKeyboardMarkup(rows)
 
 
@@ -147,7 +158,11 @@ async def practicar_build_callback(update: Update, context: ContextTypes.DEFAULT
 
     _, prog_idx_s, origin_pc_s, target_pc_s, sel_csv, chord = query.data.split("|")
     prog_idx, origin_pc, target_pc = int(prog_idx_s), int(origin_pc_s), int(target_pc_s)
-    selections = (sel_csv.split(",") if sel_csv else []) + [chord]
+    prev_selections = sel_csv.split(",") if sel_csv else []
+    if chord == UNDO_MARK:
+        selections = prev_selections[:-1]
+    else:
+        selections = prev_selections + [chord]
 
     name, degrees = COMMON_PROGRESSIONS[prog_idx]
     total = len(degrees)
@@ -165,7 +180,7 @@ async def practicar_build_callback(update: Update, context: ContextTypes.DEFAULT
             + _progress_line(total, selections)
         )
         prefix = f"pbld|{prog_idx}|{origin_pc}|{target_pc}|{new_sel_csv}"
-        markup = _chords_keyboard(ALL_BASIC_CHORDS, prefix, columns=4)
+        markup = _chords_keyboard(ALL_BASIC_CHORDS, prefix, columns=4, show_undo=bool(selections))
         await query.edit_message_text(text, parse_mode="Markdown", reply_markup=markup)
         return
 
@@ -174,6 +189,14 @@ async def practicar_build_callback(update: Update, context: ContextTypes.DEFAULT
     stats = db.record_result(query.from_user.id, is_correct)
     text = header + "\n\n" + _result_line(is_correct, selections, correct_chords, stats)
     await query.edit_message_text(text, parse_mode="Markdown")
+
+    bpm = random_bpm()
+    strum_name, strum_pattern = random_strum_pattern()
+    img = build_practice_card(correct_chords, bpm, strum_name, strum_pattern, title=f"{name} en {target_key}")
+    await query.message.reply_photo(
+        photo=_image_to_bytes(img),
+        caption=f"🎸 Diagramas para practicar la progresión correcta en {target_key}.",
+    )
 
 
 @_allowed
@@ -230,7 +253,11 @@ async def cancion_build_callback(update: Update, context: ContextTypes.DEFAULT_T
 
     _, song_idx_s, target_pc_s, sel_csv, chord = query.data.split("|")
     song_idx, target_pc = int(song_idx_s), int(target_pc_s)
-    selections = (sel_csv.split(",") if sel_csv else []) + [chord]
+    prev_selections = sel_csv.split(",") if sel_csv else []
+    if chord == UNDO_MARK:
+        selections = prev_selections[:-1]
+    else:
+        selections = prev_selections + [chord]
 
     songs = load_songs()
     song = songs[song_idx]
@@ -248,7 +275,7 @@ async def cancion_build_callback(update: Update, context: ContextTypes.DEFAULT_T
             + _progress_line(total, selections)
         )
         prefix = f"cbld|{song_idx}|{target_pc}|{new_sel_csv}"
-        markup = _chords_keyboard(ALL_EXTENDED_CHORDS, prefix, columns=6)
+        markup = _chords_keyboard(ALL_EXTENDED_CHORDS, prefix, columns=6, show_undo=bool(selections))
         await query.edit_message_text(text, parse_mode="Markdown", reply_markup=markup)
         return
 
@@ -262,6 +289,16 @@ async def cancion_build_callback(update: Update, context: ContextTypes.DEFAULT_T
     stats = db.record_result(query.from_user.id, is_correct)
     text = header + "\n\n" + _result_line(is_correct, selections, correct_chords, stats)
     await query.edit_message_text(text, parse_mode="Markdown")
+
+    bpm = random_bpm()
+    strum_name, strum_pattern = random_strum_pattern()
+    img = build_practice_card(
+        correct_chords, bpm, strum_name, strum_pattern, title=f"{song['title']} en {target_key}"
+    )
+    await query.message.reply_photo(
+        photo=_image_to_bytes(img),
+        caption=f"🎸 Diagramas para practicar {song['title']} en {target_key}.",
+    )
 
 
 @_allowed
