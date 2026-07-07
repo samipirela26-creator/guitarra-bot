@@ -137,3 +137,19 @@ def resolve_diagram(chord_name: str) -> tuple[list, str | None]:
         notes.append(f"bajo real: {NOTE_NAMES[bass_pc % 12]}")
     note = " · ".join(notes) if notes else None
     return CHORD_SHAPES[base_name], note
+
+
+def simplify_chord_name(chord_name: str) -> str:
+    """Reduce cualquier acorde (incluyendo slash chords y calidades no soportadas)
+    al nombre canónico más cercano que sí exista en CHORD_SHAPES, ignorando el bajo
+    alterado. Se usa para que el picker de "arma la respuesta" (todos los acordes
+    posibles) de /canciones siempre tenga un botón alcanzable, igual que
+    resolve_diagram hace para el dibujo del diagrama."""
+    from .notes import format_chord, NOTE_NAMES, parse_chord
+
+    root_pc, quality, _bass_pc = parse_chord(chord_name)
+    canonical = format_chord(root_pc, quality)
+    if canonical in CHORD_SHAPES:
+        return canonical
+    is_minor = quality.startswith("m") and not quality.startswith("maj")
+    return NOTE_NAMES[root_pc % 12] + ("m" if is_minor else "")

@@ -74,15 +74,125 @@ def build_progression(key_root_pc: int, degrees: list[int]) -> list[str]:
     return chords
 
 
+def build_progression_ext(key_root_pc: int, degree_qualities: list[tuple[int, str]]) -> list[str]:
+    """Como build_progression, pero cada grado trae su propia calidad explícita
+    (permite 7, maj7, m7, sus4 en vez de solo la tríada diatónica por defecto)."""
+    chords = []
+    for degree, quality in degree_qualities:
+        interval = MAJOR_SCALE_STEPS[degree]
+        chords.append(format_chord(key_root_pc + interval, quality))
+    return chords
+
+
+# Progresiones agrupadas por estilo musical, con calidades explícitas (no solo
+# tríadas) para enriquecer las tarjetas de práctica (/tarjeta) más allá de los
+# acordes básicos. Cada entrada: (nombre en números romanos, [(grado, calidad), ...]).
+# Espacio combinatorio: 8 estilos × 8 progresiones × 12 tonalidades × 4 patrones
+# de rasgueo (ver theory.rhythm.STRUM_PATTERNS) = 3072 tarjetas distintas posibles.
+STYLE_PROGRESSIONS: dict[str, list[tuple[str, list[tuple[int, str]]]]] = {
+    "Pop": [
+        ("I - V - vi - IV", [(0, ""), (4, ""), (5, "m"), (3, "")]),
+        ("vi - IV - I - V", [(5, "m"), (3, ""), (0, ""), (4, "")]),
+        ("I - IV - V - I", [(0, ""), (3, ""), (4, ""), (0, "")]),
+        ("I - vi - IV - V", [(0, ""), (5, "m"), (3, ""), (4, "")]),
+        ("IV - I - V - vi", [(3, ""), (0, ""), (4, ""), (5, "m")]),
+        ("I - V - IV - V", [(0, ""), (4, ""), (3, ""), (4, "")]),
+        ("vi - V - IV - V", [(5, "m"), (4, ""), (3, ""), (4, "")]),
+        ("I - IV - vi - V", [(0, ""), (3, ""), (5, "m"), (4, "")]),
+    ],
+    "Balada": [
+        ("I - vi - IV - V", [(0, ""), (5, "m"), (3, ""), (4, "")]),
+        ("I - iii - IV - V", [(0, ""), (2, "m"), (3, ""), (4, "")]),
+        ("vi - IV - Vsus4 - V", [(5, "m"), (3, ""), (4, "sus4"), (4, "")]),
+        ("I - IVmaj7 - V - vi", [(0, ""), (3, "maj7"), (4, ""), (5, "m")]),
+        ("Imaj7 - vi - IV - V", [(0, "maj7"), (5, "m"), (3, ""), (4, "")]),
+        ("ii - IV - Isus4 - I", [(1, "m"), (3, ""), (0, "sus4"), (0, "")]),
+        ("I - V - vi - iii", [(0, ""), (4, ""), (5, "m"), (2, "m")]),
+        ("IV - Vsus4 - V - I", [(3, ""), (4, "sus4"), (4, ""), (0, "")]),
+    ],
+    "Rock": [
+        ("I - IV - V - IV", [(0, ""), (3, ""), (4, ""), (3, "")]),
+        ("vi - IV - I - V", [(5, "m"), (3, ""), (0, ""), (4, "")]),
+        ("I - V - IV - I", [(0, ""), (4, ""), (3, ""), (0, "")]),
+        ("ii - IV - I - V", [(1, "m"), (3, ""), (0, ""), (4, "")]),
+        ("I - IV - I - V", [(0, ""), (3, ""), (0, ""), (4, "")]),
+        ("IV - V - I - vi", [(3, ""), (4, ""), (0, ""), (5, "m")]),
+        ("I - vi - ii - V", [(0, ""), (5, "m"), (1, "m"), (4, "")]),
+        ("vi - I - IV - V", [(5, "m"), (0, ""), (3, ""), (4, "")]),
+    ],
+    "Blues": [
+        ("I7 - IV7 - I7 - V7", [(0, "7"), (3, "7"), (0, "7"), (4, "7")]),
+        ("I7 - IV7 - V7 - IV7", [(0, "7"), (3, "7"), (4, "7"), (3, "7")]),
+        ("I7 - I7 - IV7 - IV7", [(0, "7"), (0, "7"), (3, "7"), (3, "7")]),
+        ("ii7 - V7 - I7 (turnaround)", [(1, "m7"), (4, "7"), (0, "7")]),
+        ("I7 - IV7 - I7 - I7", [(0, "7"), (3, "7"), (0, "7"), (0, "7")]),
+        ("V7 - IV7 - I7 - V7", [(4, "7"), (3, "7"), (0, "7"), (4, "7")]),
+        ("I7 - vi7 - ii7 - V7", [(0, "7"), (5, "m7"), (1, "m7"), (4, "7")]),
+        ("IV7 - I7 - V7 - I7", [(3, "7"), (0, "7"), (4, "7"), (0, "7")]),
+    ],
+    "Jazz": [
+        ("ii7 - V7 - Imaj7", [(1, "m7"), (4, "7"), (0, "maj7")]),
+        ("vi7 - ii7 - V7 - Imaj7", [(5, "m7"), (1, "m7"), (4, "7"), (0, "maj7")]),
+        ("Imaj7 - vi7 - ii7 - V7", [(0, "maj7"), (5, "m7"), (1, "m7"), (4, "7")]),
+        ("iii7 - vi7 - ii7 - V7", [(2, "m7"), (5, "m7"), (1, "m7"), (4, "7")]),
+        ("IVmaj7 - V7 - iii7 - vi7", [(3, "maj7"), (4, "7"), (2, "m7"), (5, "m7")]),
+        ("Imaj7 - IVmaj7 - iii7 - vi7", [(0, "maj7"), (3, "maj7"), (2, "m7"), (5, "m7")]),
+        ("ii7 - V7 - vi7 - IVmaj7", [(1, "m7"), (4, "7"), (5, "m7"), (3, "maj7")]),
+        ("Imaj7 - ii7 - iii7 - IVmaj7", [(0, "maj7"), (1, "m7"), (2, "m7"), (3, "maj7")]),
+    ],
+    "Reggae": [
+        ("I - V - vi - IV", [(0, ""), (4, ""), (5, "m"), (3, "")]),
+        ("vi - IV - V - I", [(5, "m"), (3, ""), (4, ""), (0, "")]),
+        ("I - IV - I - V", [(0, ""), (3, ""), (0, ""), (4, "")]),
+        ("ii - V - I - IV", [(1, "m"), (4, ""), (0, ""), (3, "")]),
+        ("I - iii - IV - V", [(0, ""), (2, "m"), (3, ""), (4, "")]),
+        ("vi - ii - V - I", [(5, "m"), (1, "m"), (4, ""), (0, "")]),
+        ("IV - V - vi - I", [(3, ""), (4, ""), (5, "m"), (0, "")]),
+        ("I - IVsus4 - IV - V", [(0, ""), (3, "sus4"), (3, ""), (4, "")]),
+    ],
+    "Bachata": [
+        ("vi - IV - I - V", [(5, "m"), (3, ""), (0, ""), (4, "")]),
+        ("vi - V - IV - V", [(5, "m"), (4, ""), (3, ""), (4, "")]),
+        ("vi - IV - vi - V", [(5, "m"), (3, ""), (5, "m"), (4, "")]),
+        ("ii - V - vi - IV", [(1, "m"), (4, ""), (5, "m"), (3, "")]),
+        ("I - vi - ii - V", [(0, ""), (5, "m"), (1, "m"), (4, "")]),
+        ("vi - ii - V - I", [(5, "m"), (1, "m"), (4, ""), (0, "")]),
+        ("iii - vi - ii - V", [(2, "m"), (5, "m"), (1, "m"), (4, "")]),
+        ("vi - IV - I - IV", [(5, "m"), (3, ""), (0, ""), (3, "")]),
+    ],
+    "Adoración": [
+        ("I - IVmaj7 - V - vi", [(0, ""), (3, "maj7"), (4, ""), (5, "m")]),
+        ("Imaj7 - IVmaj7 - V7 - Imaj7", [(0, "maj7"), (3, "maj7"), (4, "7"), (0, "maj7")]),
+        ("vi - IV - Imaj7 - V", [(5, "m"), (3, ""), (0, "maj7"), (4, "")]),
+        ("I - Vsus4 - V - vi", [(0, ""), (4, "sus4"), (4, ""), (5, "m")]),
+        ("ii7 - V7 - Imaj7 - vi7", [(1, "m7"), (4, "7"), (0, "maj7"), (5, "m7")]),
+        ("I - iii - IVmaj7 - Vsus4", [(0, ""), (2, "m"), (3, "maj7"), (4, "sus4")]),
+        ("Imaj7 - vi7 - IVmaj7 - V7", [(0, "maj7"), (5, "m7"), (3, "maj7"), (4, "7")]),
+        ("I - IVsus4 - IV - Vsus4", [(0, ""), (3, "sus4"), (3, ""), (4, "sus4")]),
+    ],
+}
+
+
+def random_style_progression(rng: random.Random | None = None) -> tuple[str, str, list[tuple[int, str]]]:
+    """Elige un estilo y una de sus progresiones al azar. Devuelve (estilo, nombre, grados/calidades)."""
+    rng = rng or random
+    style = rng.choice(list(STYLE_PROGRESSIONS))
+    name, degree_qualities = rng.choice(STYLE_PROGRESSIONS[style])
+    return style, name, degree_qualities
+
+
 def _random_other_key(exclude_pc: int, rng: random.Random) -> int:
     choices = [pc for pc in range(12) if pc != exclude_pc]
     return rng.choice(choices)
 
 
 def generate_question(rng: random.Random | None = None) -> dict:
-    """Genera una pregunta: progresión en un tono origen, debe transportarse al tono destino."""
+    """Genera una pregunta: progresión en un tono origen, debe transportarse al tono destino.
+    Ya no incluye opciones múltiples — el bot (handlers.py) arma el picker con
+    todos los acordes posibles y el jugador construye la respuesta acorde por acorde."""
     rng = rng or random
-    name, degrees = rng.choice(COMMON_PROGRESSIONS)
+    prog_idx = rng.randrange(len(COMMON_PROGRESSIONS))
+    name, degrees = COMMON_PROGRESSIONS[prog_idx]
     origin_pc = rng.randrange(12)
     target_pc = _random_other_key(origin_pc, rng)
 
@@ -90,36 +200,14 @@ def generate_question(rng: random.Random | None = None) -> dict:
     semitones = (target_pc - origin_pc) % 12
     correct_chords = transpose_progression(origin_chords, semitones)
 
-    distractor_sets = []
-
-    # Distractor 1: desplazamiento correcto pero un semitono de más.
-    off_by_one = transpose_progression(origin_chords, (semitones + 1) % 12)
-    if off_by_one != correct_chords:
-        distractor_sets.append(off_by_one)
-
-    # Distractor 2: desplazamiento correcto pero un semitono de menos.
-    off_by_minus_one = transpose_progression(origin_chords, (semitones - 1) % 12)
-    if off_by_minus_one != correct_chords and off_by_minus_one not in distractor_sets:
-        distractor_sets.append(off_by_minus_one)
-
-    # Distractor 3: mismo patrón, tonalidad totalmente distinta (aleatoria).
-    while len(distractor_sets) < 3:
-        random_pc = _random_other_key(origin_pc, rng)
-        candidate = build_progression(random_pc, degrees)
-        if candidate != correct_chords and candidate not in distractor_sets:
-            distractor_sets.append(candidate)
-
-    options = distractor_sets[:3] + [correct_chords]
-    rng.shuffle(options)
-    correct_index = options.index(correct_chords)
-
     return {
         "progression_name": name,
+        "prog_idx": prog_idx,
+        "origin_pc": origin_pc,
+        "target_pc": target_pc,
         "origin_key": NOTE_NAMES[origin_pc],
         "target_key": NOTE_NAMES[target_pc],
         "origin_chords": origin_chords,
         "correct_chords": correct_chords,
-        "options": options,
-        "correct_index": correct_index,
         "explanation": PROGRESSION_EXPLANATIONS.get(name),
     }

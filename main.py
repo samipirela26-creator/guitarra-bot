@@ -4,11 +4,12 @@ from telegram import BotCommand
 from telegram.ext import Application, ApplicationBuilder, CallbackQueryHandler, CommandHandler
 
 from src.bot.handlers import (
+    cancion_build_callback,
     cancion_callback,
     canciones_command,
     circulo_command,
     help_command,
-    practicar_callback,
+    practicar_build_callback,
     practicar_command,
     puntaje_command,
     sesion_command,
@@ -52,8 +53,9 @@ def main() -> None:
     app.add_handler(CommandHandler("tarjeta", tarjeta_command))
     app.add_handler(CommandHandler("sesion", sesion_command))
     app.add_handler(CommandHandler("puntaje", puntaje_command))
-    app.add_handler(CallbackQueryHandler(practicar_callback, pattern=r"^ans\|"))
+    app.add_handler(CallbackQueryHandler(practicar_build_callback, pattern=r"^pbld\|"))
     app.add_handler(CallbackQueryHandler(cancion_callback, pattern=r"^song\|"))
+    app.add_handler(CallbackQueryHandler(cancion_build_callback, pattern=r"^cbld\|"))
 
     logger.info("Trivilín está en línea 🐶🎷🎸")
     app.run_polling()
