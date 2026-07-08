@@ -55,7 +55,7 @@ def _allowed(func):
         if ALLOWED_USER_IDS and (user is None or user.id not in ALLOWED_USER_IDS):
             logger.warning("Acceso bloqueado para user_id=%s", user.id if user else None)
             if update.effective_message:
-                await update.effective_message.reply_text("No estás autorizado a usar este bot.")
+                await update.effective_message.reply_text("No está usted autorizado a usar este bot, patrón.")
             return
         return await func(update, context)
 
@@ -99,11 +99,11 @@ def _progress_line(total: int, selections: list[str]) -> str:
 
 def _result_line(is_correct: bool, selections: list[str], correct_chords: list[str], stats: dict) -> str:
     if is_correct:
-        line = f"{personality.correct_line()}\nTu respuesta: `{' - '.join(selections)}`"
+        line = f"{personality.correct_line()}\nSu respuesta: `{' - '.join(selections)}`"
     else:
         line = (
             f"{personality.incorrect_line()}\n"
-            f"Tu respuesta: `{' - '.join(selections)}`\n"
+            f"Su respuesta: `{' - '.join(selections)}`\n"
             f"Correcta: `{' - '.join(correct_chords)}`"
         )
     line += f"\n\n🔥 Racha: {stats['streak']} (mejor: {stats['best_streak']})"
@@ -163,7 +163,7 @@ def _circulo_armonico_text(root_pc: int, mode: str = "M") -> str:
     ]
     for roman, chord, function in circle:
         lines.append(f"*{roman}* → `{chord}` — {function}")
-    lines.append("\nToca otra tonalidad para verla.")
+    lines.append("\nToque otra tonalidad para verla, patrón.")
     return "\n".join(lines)
 
 
@@ -173,9 +173,9 @@ async def circulo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     with open(path, "rb") as f:
         await update.effective_message.reply_photo(
             photo=f,
-            caption="🎼 Círculo de quintas. Toca una tonalidad para ver su círculo armónico "
-            "(los acordes que combinan en esa tonalidad y para qué sirve cada uno). "
-            "También puedes ver las tonalidades menores.",
+            caption="🎼 Círculo de quintas. Toque una tonalidad para ver su círculo armónico "
+            "(los acordes que combinan en esa tonalidad y para qué sirve cada uno), patrón. "
+            "También puede ver las tonalidades menores.",
             reply_markup=_circulo_keyboard("M"),
         )
 
@@ -197,7 +197,7 @@ async def circulo_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     img = build_chord_row(chords, labels, title=f"Acordes de {key_name}")
     await query.message.reply_photo(
         photo=_image_to_bytes(img),
-        caption=f"🎸 Los 7 acordes de {key_name} para tocar mientras miras el círculo armónico.",
+        caption=f"🎸 Los 7 acordes de {key_name} para tocar mientras mira usted el círculo armónico, patrón.",
     )
 
 
@@ -207,13 +207,13 @@ async def circulo_mode_callback(update: Update, context: ContextTypes.DEFAULT_TY
     await query.answer()
     _, mode = query.data.split("|")
     caption = (
-        "🎼 Círculo de quintas. Toca una tonalidad para ver su círculo armónico "
-        "(los acordes que combinan en esa tonalidad y para qué sirve cada uno). "
-        "También puedes ver las tonalidades mayores."
+        "🎼 Círculo de quintas. Toque una tonalidad para ver su círculo armónico "
+        "(los acordes que combinan en esa tonalidad y para qué sirve cada uno), patrón. "
+        "También puede ver las tonalidades mayores."
         if mode == "m"
-        else "🎼 Círculo de quintas. Toca una tonalidad para ver su círculo armónico "
-        "(los acordes que combinan en esa tonalidad y para qué sirve cada uno). "
-        "También puedes ver las tonalidades menores."
+        else "🎼 Círculo de quintas. Toque una tonalidad para ver su círculo armónico "
+        "(los acordes que combinan en esa tonalidad y para qué sirve cada uno), patrón. "
+        "También puede ver las tonalidades menores."
     )
     await query.edit_message_caption(
         caption=caption, reply_markup=_circulo_keyboard(mode)
@@ -226,7 +226,7 @@ def _practicar_header(
     text = (
         f"🎸 Progresión *{name}* en *{origin_key}*:\n"
         f"`{' - '.join(origin_chords)}`\n\n"
-        f"Transpórtala a *{target_key}*."
+        f"Transpórtela a *{target_key}*, patrón."
     )
     if explanation:
         text += f"\n\n💡 _Por qué funciona:_ {explanation}"
@@ -251,7 +251,7 @@ def _practicar_question_msg() -> tuple[str, InlineKeyboardMarkup]:
         question["target_key"],
         question["explanation"],
     )
-    text = header + f"\n\nArma la respuesta acorde por acorde (1/{total}):\n{_progress_line(total, [])}"
+    text = header + f"\n\nArme la respuesta acorde por acorde (1/{total}):\n{_progress_line(total, [])}"
     prefix = f"pbld|{question['prog_idx']}|{question['origin_pc']}|{question['target_pc']}|"
     markup = _chords_keyboard(ALL_BASIC_CHORDS, prefix, columns=4)
     return text, markup
@@ -298,7 +298,7 @@ async def practicar_build_callback(update: Update, context: ContextTypes.DEFAULT
         new_sel_csv = ",".join(selections)
         text = (
             header
-            + f"\n\nArma la respuesta acorde por acorde ({len(selections) + 1}/{total}):\n"
+            + f"\n\nArme la respuesta acorde por acorde ({len(selections) + 1}/{total}):\n"
             + _progress_line(total, selections)
         )
         prefix = f"pbld|{prog_idx}|{origin_pc}|{target_pc}|{new_sel_csv}"
@@ -334,7 +334,7 @@ async def canciones_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if row:
         buttons.append(row)
     await update.effective_message.reply_text(
-        "🎵 Elige una canción del cancionero para practicar transportarla:",
+        "🎵 Elija una canción del cancionero para ejercitar su transporte, patrón:",
         reply_markup=InlineKeyboardMarkup(buttons),
     )
 
@@ -352,8 +352,8 @@ async def letra_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if row:
         buttons.append(row)
     await update.effective_message.reply_text(
-        "📄 Elige una canción para ver su letra completa con los acordes, tal como "
-        "está en el cancionero:",
+        "📄 Elija una canción para contemplar su letra completa con los acordes, "
+        "tal como está en el cancionero, patrón:",
         reply_markup=InlineKeyboardMarkup(buttons),
     )
 
@@ -374,7 +374,7 @@ def _cancion_header(title: str, origin_key: str, origin_chords: list[str], targe
     return (
         f"🎵 *{title}* está en *{origin_key}*:\n"
         f"`{' - '.join(origin_chords)}`\n\n"
-        f"Transpórtala a *{target_key}*."
+        f"Transpórtela a *{target_key}*, patrón."
     )
 
 
@@ -393,7 +393,7 @@ async def cancion_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     header = _cancion_header(
         question["title"], question["origin_key"], question["origin_chords"], question["target_key"]
     )
-    text = header + f"\n\nArma la respuesta acorde por acorde (1/{total}):\n{_progress_line(total, [])}"
+    text = header + f"\n\nArme la respuesta acorde por acorde (1/{total}):\n{_progress_line(total, [])}"
     prefix = f"cbld|{song_idx}|{question['target_pc']}|"
     markup = _chords_keyboard(ALL_EXTENDED_CHORDS, prefix, columns=6)
     await query.edit_message_text(text, parse_mode="Markdown", reply_markup=markup)
@@ -424,7 +424,7 @@ async def cancion_build_callback(update: Update, context: ContextTypes.DEFAULT_T
         new_sel_csv = ",".join(selections)
         text = (
             header
-            + f"\n\nArma la respuesta acorde por acorde ({len(selections) + 1}/{total}):\n"
+            + f"\n\nArme la respuesta acorde por acorde ({len(selections) + 1}/{total}):\n"
             + _progress_line(total, selections)
         )
         prefix = f"cbld|{song_idx}|{target_pc}|{new_sel_csv}"
@@ -464,7 +464,7 @@ async def tarjeta_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     title = f"{name} ({style}) en {NOTE_NAMES[key_root]}"
     img = build_practice_card(chords, bpm, strum_name, strum_pattern, title=title)
-    caption = f"🎼 {title} — practica el cambio de acorde con este ritmo."
+    caption = f"🎼 {title} — practique el cambio de acorde con este ritmo, patrón."
     await update.effective_message.reply_photo(
         photo=_image_to_bytes(img),
         caption=caption,
@@ -496,8 +496,8 @@ def _estilo_result_keyboard(style: str) -> InlineKeyboardMarkup:
 
 
 _ESTILO_MENU_TEXT = (
-    "🐶🎸 Con el saxo me sé todos los géneros — dime cuál quieres y te armo una "
-    "progresión, tono y ritmo típicos de ese estilo:"
+    "🐶🎸 Con el saxo conozco todos los géneros, patrón — dígame cuál desea y le "
+    "armo una progresión, tono y ritmo propios de ese estilo:"
 )
 
 
@@ -564,12 +564,12 @@ async def sesion_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "1️⃣ *Calentamiento* (5 min)\n"
         f"{warmup}\n\n"
         "2️⃣ *Cambios de acorde* (5-8 min)\n"
-        f"Alterna `{pair_a}` ↔ `{pair_b}` con metrónomo. Empieza lento, sube el tempo "
+        f"Alterne `{pair_a}` ↔ `{pair_b}` con metrónomo. Empiece lento, suba el tempo "
         "solo cuando el cambio salga limpio.\n\n"
         "3️⃣ *Técnica* (5 min)\n"
         f"{technique}\n\n"
         f"4️⃣ *Canción real: {song['title']}* (10-15 min)\n"
-        f"Toma este círculo armónico con estos acordes en *{bpm} BPM*, practícalos:\n"
+        f"Tome este círculo armónico con estos acordes en *{bpm} BPM*, patrón, y practíquelos:\n"
         f"`{' - '.join(chords)}`"
     )
     await update.effective_message.reply_text(text, parse_mode="Markdown")
@@ -592,10 +592,10 @@ async def sesion_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # el mismo "Sistema Nashville" que usan las bandas de adoración) y siempre cierra
 # recordando revisar la racha en /puntaje (el "no rompas la cadena" de los hábitos).
 _PLAN_INTRO = (
-    "🐶🎷 *¿Cuánto tiempo tienes hoy?*\n"
-    "Ni yo con el saxo practico igual todos los días — dime cuánto tienes y te armo "
-    "la rutina a la medida. La idea es que nunca falles un día entero, aunque sea la "
-    "versión corta:"
+    "🐶🎷 *¿Cuánto tiempo tiene hoy, patrón?*\n"
+    "Ni yo, con el saxo, practico igual todos los días — dígame cuánto tiene y le "
+    "armo la rutina a la medida. Que nunca falte usted un día entero, aunque sea "
+    "con la versión breve, es lo que cuenta ante el Señor:"
 )
 
 _PLAN_TIERS = {
@@ -603,30 +603,31 @@ _PLAN_TIERS = {
         "⏱️ Poco tiempo (5-10 min)",
         "⏱️ *Día apurado (5-10 min)*\n\n"
         "1️⃣ 2 min de calentamiento: /tarjeta o /estilo → Adoración.\n"
-        "2️⃣ 5-8 min: /practicar — arma 2-3 progresiones de transposición. Este es "
-        "tu ejercicio prioritario (el cambio de tono), no lo saltes aunque el día "
-        "esté corto.\n\n"
-        "✅ Con esto ya cumpliste el día. Revisa tu racha en /puntaje. 🐾",
+        "2️⃣ 5-8 min: /practicar — arme 2-3 progresiones de transposición. Este es "
+        "su ejercicio prioritario (el cambio de tono); no lo deje de lado aunque "
+        "el día esté corto.\n\n"
+        "✅ Con esto ya cumplió el día, patrón. Revise su racha en /puntaje. 🐾",
     ),
     "normal": (
         "🕐 Tiempo normal (15-20 min)",
         "🕐 *Día normal (15-20 min)*\n\n"
         "1️⃣ 3 min calentamiento: /tarjeta.\n"
-        "2️⃣ 8-10 min: /practicar + /circulo — toca la tonalidad que te salga y "
-        "piensa el numeral romano (I, IV, V...) de cada acorde antes que el "
+        "2️⃣ 8-10 min: /practicar + /circulo — toque la tonalidad que le salga y "
+        "piense el numeral romano (I, IV, V...) de cada acorde antes que el "
         "nombre de la nota.\n"
         "3️⃣ 5-7 min: una canción real con /canciones o /letra, intentando "
         "transportarla de oído.\n\n"
-        "✅ Revisa tu racha en /puntaje. 🐾",
+        "✅ Revise su racha en /puntaje. 🐾",
     ),
     "largo": (
         "⏳ Tengo tiempo (30-45 min)",
         "⏳ *Día con tiempo (30-45 min)*\n\n"
-        "1️⃣ Corre /sesion completo (calentamiento → cambios de acorde → técnica "
+        "1️⃣ Corra /sesion completo (calentamiento → cambios de acorde → técnica "
         "→ canción real).\n"
         "2️⃣ +10 min extra de /practicar, enfocado solo en cambios de tono.\n\n"
-        "✅ Revisa tu racha en /puntaje — y recuerda: si un día no tocas, no pasa "
-        "nada, pero al día siguiente sí o sí (nunca falles dos veces seguidas). 🐾",
+        "✅ Revise su racha en /puntaje, patrón — y recuerde: si un día no toca, "
+        "no pasa nada, pero al día siguiente sí o sí (nunca falle dos veces "
+        "seguidas, que la constancia también es un fruto del Espíritu). 🐾",
     ),
 }
 
@@ -659,9 +660,11 @@ async def puntaje_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     total = stats["correct"] + stats["incorrect"]
     pct = (stats["correct"] / total * 100) if total else 0
     text = (
-        f"📊 *Tu puntaje*\n"
+        f"📊 *Su puntaje, patrón*\n"
         f"Aciertos: {stats['correct']} / {total} ({pct:.0f}%)\n"
         f"Racha actual: {stats['streak']}\n"
         f"Mejor racha: {stats['best_streak']}"
     )
+    if stats["streak"] >= 7:
+        text += "\n\n🙏 Una semana sin fallar — la constancia también es fruto del Espíritu, patrón."
     await update.effective_message.reply_text(text, parse_mode="Markdown")
