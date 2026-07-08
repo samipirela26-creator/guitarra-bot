@@ -41,6 +41,26 @@ def _is_chord_line(tokens: list[str]) -> bool:
     return bool(tokens) and all(CHORD_TOKEN_RE.match(t) for t in tokens)
 
 
+def _clean_lyrics(text: str) -> str:
+    """Texto crudo del PDF (acordes + letra) listo para mostrarse en un bloque
+    de código monoespaciado de Telegram, tal como aparece en el PDF: se quita
+    la línea de "Tono Original/Transportado" y se recortan espacios sobrantes
+    al final de cada línea y líneas en blanco repetidas, pero se CONSERVAN los
+    espacios a la izquierda de cada línea — ahí es donde vive la posición del
+    acorde justo encima de la sílaba de la letra (columna a columna, igual que
+    en el PDF original)."""
+    lines = [raw_line.rstrip() for raw_line in text.splitlines() if not _KEY_RE.search(raw_line)]
+    cleaned = []
+    prev_blank = False
+    for line in lines:
+        is_blank = line.strip() == ""
+        if is_blank and prev_blank:
+            continue
+        cleaned.append(line)
+        prev_blank = is_blank
+    return "\n".join(cleaned).strip("\n")
+
+
 def parse_song_pdf(path: Path) -> dict | None:
     reader = PdfReader(str(path))
     text = "\n".join(page.extract_text() or "" for page in reader.pages)
@@ -79,6 +99,7 @@ def parse_song_pdf(path: Path) -> dict | None:
         "tono": tono,
         "chord_sequence": chord_sequence,
         "unique_chords": unique_chords,
+        "lyrics": _clean_lyrics(text),
     }
 
 

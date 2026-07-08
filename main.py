@@ -11,6 +11,8 @@ from src.bot.handlers import (
     circulo_command,
     circulo_mode_callback,
     help_command,
+    letra_callback,
+    letra_command,
     practicar_build_callback,
     practicar_command,
     puntaje_command,
@@ -29,6 +31,7 @@ logger = logging.getLogger(__name__)
 BOT_COMMANDS = [
     BotCommand("practicar", "Transportar una progresión de acordes"),
     BotCommand("canciones", "Practicar transportando una canción real"),
+    BotCommand("letra", "Ver la letra completa de una canción con acordes"),
     BotCommand("sesion", "Rutina de práctica guiada completa"),
     BotCommand("tarjeta", "Tarjeta de práctica con acordes y ritmo al azar"),
     BotCommand("circulo", "Ver el círculo de quintas"),
@@ -52,11 +55,13 @@ def main() -> None:
     app.add_handler(CommandHandler("circulo", circulo_command))
     app.add_handler(CommandHandler("practicar", practicar_command))
     app.add_handler(CommandHandler("canciones", canciones_command))
+    app.add_handler(CommandHandler("letra", letra_command))
     app.add_handler(CommandHandler("tarjeta", tarjeta_command))
     app.add_handler(CommandHandler("sesion", sesion_command))
     app.add_handler(CommandHandler("puntaje", puntaje_command))
     app.add_handler(CallbackQueryHandler(practicar_build_callback, pattern=r"^pbld\|"))
     app.add_handler(CallbackQueryHandler(cancion_callback, pattern=r"^song\|"))
+    app.add_handler(CallbackQueryHandler(letra_callback, pattern=r"^letra\|"))
     app.add_handler(CallbackQueryHandler(cancion_build_callback, pattern=r"^cbld\|"))
     app.add_handler(CallbackQueryHandler(circulo_callback, pattern=r"^circ\|"))
     app.add_handler(CallbackQueryHandler(circulo_mode_callback, pattern=r"^circmode\|"))

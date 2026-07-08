@@ -299,6 +299,37 @@ async def canciones_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+@_allowed
+async def letra_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    songs = load_songs()
+    buttons = []
+    row = []
+    for i, song in enumerate(songs):
+        row.append(InlineKeyboardButton(song["title"], callback_data=f"letra|{i}"))
+        if len(row) == 2:
+            buttons.append(row)
+            row = []
+    if row:
+        buttons.append(row)
+    await update.effective_message.reply_text(
+        "📄 Elige una canción para ver su letra completa con los acordes, tal como "
+        "está en el cancionero:",
+        reply_markup=InlineKeyboardMarkup(buttons),
+    )
+
+
+@_allowed
+async def letra_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    _, idx_str = query.data.split("|")
+    song_idx = int(idx_str)
+    songs = load_songs()
+    song = songs[song_idx]
+    text = f"🎼 *{song['title']}* — tono *{song['tono']}*\n```\n{song['lyrics']}\n```"
+    await query.edit_message_text(text, parse_mode="Markdown")
+
+
 def _cancion_header(title: str, origin_key: str, origin_chords: list[str], target_key: str) -> str:
     return (
         f"🎵 *{title}* está en *{origin_key}*:\n"
