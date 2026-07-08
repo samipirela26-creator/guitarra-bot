@@ -233,8 +233,15 @@ def _practicar_header(
     return text
 
 
-@_allowed
-async def practicar_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# Botón para encadenar rondas sin volver a escribir /practicar — pensado para
+# jugar en ratos muertos (una fila de espera, antes de empezar el ensayo...):
+# tocarlo reemplaza el mensaje de resultado por una pregunta nueva al toque.
+_JUGAR_OTRA_VEZ = InlineKeyboardMarkup([[InlineKeyboardButton("🎲 Jugar otra vez", callback_data="pagain")]])
+
+
+def _practicar_question_msg() -> tuple[str, InlineKeyboardMarkup]:
+    """Arma el texto + teclado de una pregunta nueva de "jugar a transportar"
+    (usado tanto por /practicar como por el botón "Jugar otra vez")."""
     question = generate_question()
     total = len(question["origin_chords"])
     header = _practicar_header(
@@ -247,7 +254,23 @@ async def practicar_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = header + f"\n\nArma la respuesta acorde por acorde (1/{total}):\n{_progress_line(total, [])}"
     prefix = f"pbld|{question['prog_idx']}|{question['origin_pc']}|{question['target_pc']}|"
     markup = _chords_keyboard(ALL_BASIC_CHORDS, prefix, columns=4)
+    return text, markup
+
+
+@_allowed
+async def practicar_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text, markup = _practicar_question_msg()
     await update.effective_message.reply_text(text, parse_mode="Markdown", reply_markup=markup)
+
+
+@_allowed
+async def practicar_again_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """El botón "🎲 Jugar otra vez" del resultado: arma una ronda nueva en el
+    mismo mensaje, para poder encadenar varias sin escribir /practicar de nuevo."""
+    query = update.callback_query
+    await query.answer()
+    text, markup = _practicar_question_msg()
+    await query.edit_message_text(text, parse_mode="Markdown", reply_markup=markup)
 
 
 @_allowed
@@ -287,7 +310,7 @@ async def practicar_build_callback(update: Update, context: ContextTypes.DEFAULT
     is_correct = selections == correct_chords
     stats = db.record_result(query.from_user.id, is_correct)
     text = header + "\n\n" + _result_line(is_correct, selections, correct_chords, stats)
-    await query.edit_message_text(text, parse_mode="Markdown")
+    await query.edit_message_text(text, parse_mode="Markdown", reply_markup=_JUGAR_OTRA_VEZ)
 
     bpm = random_bpm()
     strum_name, strum_pattern = random_strum_pattern()

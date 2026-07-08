@@ -17,6 +17,7 @@ from src.bot.handlers import (
     letra_command,
     plan_callback,
     plan_command,
+    practicar_again_callback,
     practicar_build_callback,
     practicar_command,
     puntaje_command,
@@ -33,7 +34,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 BOT_COMMANDS = [
-    BotCommand("practicar", "Transportar una progresión de acordes"),
+    BotCommand("practicar", "Juega a transportar acordes (ideal para ratos de espera)"),
     BotCommand("canciones", "Practicar transportando una canción real"),
     BotCommand("letra", "Ver la letra completa de una canción con acordes"),
     BotCommand("sesion", "Rutina de práctica guiada completa"),
@@ -68,6 +69,7 @@ def main() -> None:
     app.add_handler(CommandHandler("plan", plan_command))
     app.add_handler(CommandHandler("puntaje", puntaje_command))
     app.add_handler(CallbackQueryHandler(practicar_build_callback, pattern=r"^pbld\|"))
+    app.add_handler(CallbackQueryHandler(practicar_again_callback, pattern=r"^pagain$"))
     app.add_handler(CallbackQueryHandler(cancion_callback, pattern=r"^song\|"))
     app.add_handler(CallbackQueryHandler(letra_callback, pattern=r"^letra\|"))
     app.add_handler(CallbackQueryHandler(cancion_build_callback, pattern=r"^cbld\|"))
