@@ -9,19 +9,29 @@ GREETING = (
     "pero para música todo se me da, así que hoy te ayudo con la *guitarra*.\n\n"
     "Aquí practicamos cambios de tonalidad, tienes el círculo de quintas a mano, "
     "y te mando tarjetas con acordes y ritmo para ensayar.\n\n"
-    "Usa /help para ver todo lo que sé hacer."
+    "¿No sabes por dónde arrancar? Prueba /plan y te armo una rutina según el "
+    "tiempo que tengas. Usa /help para ver todo lo que sé hacer."
 )
 
 HELP_TEXT = (
     "🎸 *Comandos de Trivilín*\n\n"
-    "/practicar — juego de transposición: te doy una progresión en un tono, "
-    "la cambias a otro tono y adivinas cuál es la correcta.\n"
+    "/practicar — juego rápido de transposición para ratos de espera: te doy una "
+    "progresión en un tono, la cambias a otro y adivinas cuál es la correcta. Le "
+    "das a \"Jugar otra vez\" y sigues sin escribir nada.\n"
     "/canciones — elige una canción real del cancionero y practica transportarla.\n"
-    "/circulo — la imagen del círculo de quintas, con las relativas menores.\n"
-    "/tarjeta — una tarjeta con acordes, patrón de rasgueo y tiempo (BPM) para ensayar.\n"
+    "/letra — mira la letra completa de una canción con sus acordes.\n"
+    "/circulo — la imagen del círculo de quintas, con las relativas menores y los "
+    "7 acordes de la tonalidad dibujados.\n"
+    "/tarjeta — una tarjeta con acordes, patrón de rasgueo y tiempo (BPM) al azar para ensayar.\n"
+    "/estilo — elige un género (rock, pop, jazz, merengue...) y te armo una "
+    "progresión, tono y ritmo típicos de ese estilo.\n"
     "/sesion — una rutina completa de práctica de hoy: calentamiento, cambios de acorde, "
     "técnica y una canción real con su círculo armónico y tempo.\n"
-    "/puntaje — tu racha y tus aciertos.\n"
+    "/plan — *esta es la que pregunta cuánto tiempo tienes hoy* y te arma una rutina "
+    "a la medida (corta, normal o larga). Si no sabes por dónde arrancar, empieza aquí.\n"
+    "/puntaje — tu racha y tus aciertos.\n\n"
+    "🐾 Tip: /practicar es el juego rápido sin preguntas, para cuando estás esperando "
+    "algo. /plan es la rutina pensada, la que sí te pregunta el tiempo disponible."
 )
 
 WARMUP_EXERCISES = [

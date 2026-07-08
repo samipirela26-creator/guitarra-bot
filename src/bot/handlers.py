@@ -495,13 +495,15 @@ def _estilo_result_keyboard(style: str) -> InlineKeyboardMarkup:
     )
 
 
+_ESTILO_MENU_TEXT = (
+    "🐶🎸 Con el saxo me sé todos los géneros — dime cuál quieres y te armo una "
+    "progresión, tono y ritmo típicos de ese estilo:"
+)
+
+
 @_allowed
 async def estilo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.effective_message.reply_text(
-        "🎸 Elige un estilo y te armo una progresión, tono y ritmo típicos de ese "
-        "género para practicar:",
-        reply_markup=_estilo_keyboard(),
-    )
+    await update.effective_message.reply_text(_ESTILO_MENU_TEXT, reply_markup=_estilo_keyboard())
 
 
 @_allowed
@@ -510,11 +512,7 @@ async def estilo_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
 
     if query.data == "estlmenu":
-        await query.message.reply_text(
-            "🎸 Elige un estilo y te armo una progresión, tono y ritmo típicos de ese "
-            "género para practicar:",
-            reply_markup=_estilo_keyboard(),
-        )
+        await query.message.reply_text(_ESTILO_MENU_TEXT, reply_markup=_estilo_keyboard())
         return
 
     _, style = query.data.split("|")
@@ -594,9 +592,10 @@ async def sesion_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # el mismo "Sistema Nashville" que usan las bandas de adoración) y siempre cierra
 # recordando revisar la racha en /puntaje (el "no rompas la cadena" de los hábitos).
 _PLAN_INTRO = (
-    "📅 *Plan de práctica adaptativo*\n"
-    "No es un horario fijo — elige según el tiempo que tengas *hoy*. La idea es "
-    "que nunca falles un día entero, aunque sea la versión corta:"
+    "🐶🎷 *¿Cuánto tiempo tienes hoy?*\n"
+    "Ni yo con el saxo practico igual todos los días — dime cuánto tienes y te armo "
+    "la rutina a la medida. La idea es que nunca falles un día entero, aunque sea la "
+    "versión corta:"
 )
 
 _PLAN_TIERS = {
@@ -607,7 +606,7 @@ _PLAN_TIERS = {
         "2️⃣ 5-8 min: /practicar — arma 2-3 progresiones de transposición. Este es "
         "tu ejercicio prioritario (el cambio de tono), no lo saltes aunque el día "
         "esté corto.\n\n"
-        "✅ Con esto ya cumpliste el día. Revisa tu racha en /puntaje.",
+        "✅ Con esto ya cumpliste el día. Revisa tu racha en /puntaje. 🐾",
     ),
     "normal": (
         "🕐 Tiempo normal (15-20 min)",
@@ -618,7 +617,7 @@ _PLAN_TIERS = {
         "nombre de la nota.\n"
         "3️⃣ 5-7 min: una canción real con /canciones o /letra, intentando "
         "transportarla de oído.\n\n"
-        "✅ Revisa tu racha en /puntaje.",
+        "✅ Revisa tu racha en /puntaje. 🐾",
     ),
     "largo": (
         "⏳ Tengo tiempo (30-45 min)",
@@ -627,7 +626,7 @@ _PLAN_TIERS = {
         "→ canción real).\n"
         "2️⃣ +10 min extra de /practicar, enfocado solo en cambios de tono.\n\n"
         "✅ Revisa tu racha en /puntaje — y recuerda: si un día no tocas, no pasa "
-        "nada, pero al día siguiente sí o sí (nunca falles dos veces seguidas).",
+        "nada, pero al día siguiente sí o sí (nunca falles dos veces seguidas). 🐾",
     ),
 }
 
