@@ -564,6 +564,73 @@ async def sesion_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+# Rutina adaptativa según el tiempo disponible (no un horario fijo): pensada para
+# guitarristas de iglesia que ya saben tocar el repertorio pero les cuesta cambiar
+# de tono y ser constantes. Cada nivel prioriza /practicar (el ejercicio correctivo
+# para el cambio de tono: pensar en numerales romanos en vez de nombres de nota,
+# el mismo "Sistema Nashville" que usan las bandas de adoración) y siempre cierra
+# recordando revisar la racha en /puntaje (el "no rompas la cadena" de los hábitos).
+_PLAN_INTRO = (
+    "📅 *Plan de práctica adaptativo*\n"
+    "No es un horario fijo — elige según el tiempo que tengas *hoy*. La idea es "
+    "que nunca falles un día entero, aunque sea la versión corta:"
+)
+
+_PLAN_TIERS = {
+    "corto": (
+        "⏱️ Poco tiempo (5-10 min)",
+        "⏱️ *Día apurado (5-10 min)*\n\n"
+        "1️⃣ 2 min de calentamiento: /tarjeta o /estilo → Adoración.\n"
+        "2️⃣ 5-8 min: /practicar — arma 2-3 progresiones de transposición. Este es "
+        "tu ejercicio prioritario (el cambio de tono), no lo saltes aunque el día "
+        "esté corto.\n\n"
+        "✅ Con esto ya cumpliste el día. Revisa tu racha en /puntaje.",
+    ),
+    "normal": (
+        "🕐 Tiempo normal (15-20 min)",
+        "🕐 *Día normal (15-20 min)*\n\n"
+        "1️⃣ 3 min calentamiento: /tarjeta.\n"
+        "2️⃣ 8-10 min: /practicar + /circulo — toca la tonalidad que te salga y "
+        "piensa el numeral romano (I, IV, V...) de cada acorde antes que el "
+        "nombre de la nota.\n"
+        "3️⃣ 5-7 min: una canción real con /canciones o /letra, intentando "
+        "transportarla de oído.\n\n"
+        "✅ Revisa tu racha en /puntaje.",
+    ),
+    "largo": (
+        "⏳ Tengo tiempo (30-45 min)",
+        "⏳ *Día con tiempo (30-45 min)*\n\n"
+        "1️⃣ Corre /sesion completo (calentamiento → cambios de acorde → técnica "
+        "→ canción real).\n"
+        "2️⃣ +10 min extra de /practicar, enfocado solo en cambios de tono.\n\n"
+        "✅ Revisa tu racha en /puntaje — y recuerda: si un día no tocas, no pasa "
+        "nada, pero al día siguiente sí o sí (nunca falles dos veces seguidas).",
+    ),
+}
+
+
+def _plan_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        [[InlineKeyboardButton(label, callback_data=f"plan|{key}")] for key, (label, _text) in _PLAN_TIERS.items()]
+    )
+
+
+@_allowed
+async def plan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.effective_message.reply_text(
+        _PLAN_INTRO, parse_mode="Markdown", reply_markup=_plan_keyboard()
+    )
+
+
+@_allowed
+async def plan_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    _, tier = query.data.split("|")
+    _label, text = _PLAN_TIERS[tier]
+    await query.edit_message_text(text, parse_mode="Markdown", reply_markup=_plan_keyboard())
+
+
 @_allowed
 async def puntaje_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     stats = db.get_stats(update.effective_user.id)
