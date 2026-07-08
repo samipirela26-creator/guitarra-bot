@@ -9,7 +9,20 @@ import random
 
 from ..theory.notes import NOTE_NAMES, parse_chord, semitone_distance, transpose_progression
 
-MAX_CHORDS = 4
+# Tope de acordes reales que se muestran/usan en /canciones. NO puede ser
+# "el largo real de la canción" sin límite: el picker "arma la respuesta"
+# codifica la selección acumulada en el callback_data del botón
+# (formato "cbld|{song_idx}|{target_pc}|{sel_csv}|{chord}", ver
+# bot/handlers.py), y Telegram limita callback_data a 64 bytes.
+# Peor caso medido (índice de canción y tono destino de 2 dígitos, acorde
+# más largo de ALL_EXTENDED_CHORDS = 6 chars, ej. "Abmaj7", repetido en cada
+# selección): con 7 acordes el botón más pesado pesa 59 bytes; con 8 acordes
+# ya pesa 66 bytes y Telegram rechazaría el callback. Por eso 7 es el tope
+# seguro más alto posible (cualquier canción con más acordes únicos, ej.
+# "Gracias, Dios" con 15, se trunca a los primeros 7 — no ideal, pero mejor
+# que el límite anterior de 4, que ni siquiera cubría canciones simples de 5
+# acordes como "Un Millón").
+MAX_CHORDS = 7
 
 
 def _random_other_key(exclude_pc: int, rng: random.Random) -> int:
