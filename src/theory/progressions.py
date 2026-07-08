@@ -97,6 +97,36 @@ def harmonic_circle(key_root_pc: int) -> list[tuple[str, str, str]]:
     return list(zip(DEGREE_ROMAN, chords, DEGREE_FUNCTION))
 
 
+# Escala menor natural (modo eólico): mismos intervalos que la relativa mayor
+# pero contados desde el vi de esa mayor. Ej: los acordes de La menor natural
+# (Am, Bdim, C, Dm, Em, F, G) son exactamente los de Do mayor, solo que
+# renumerados empezando en el vi.
+MINOR_SCALE_STEPS = [0, 2, 3, 5, 7, 8, 10]
+DEGREE_QUALITY_MINOR = ["m", "dim", "", "m", "m", "", ""]
+DEGREE_ROMAN_MINOR = ["i", "ii°", "III", "iv", "v", "VI", "VII"]
+
+DEGREE_FUNCTION_MINOR = [
+    "tónica menor: el acorde de \"casa\" en este modo, ahí descansa la canción.",
+    "subdominante disminuida: tensión sutil y de paso, casi no se usa sola.",
+    "relativa mayor: mismas notas que la tónica pero en mayor, un respiro más luminoso.",
+    "subdominante: se aleja de la tónica, prepara el regreso a casa.",
+    "dominante menor: empuja de vuelta a la tónica (i) con una tensión más suave que un V "
+    "mayor — muchas canciones usan V mayor \"prestado\" para una resolución más fuerte.",
+    "submediante mayor: color cálido y muy usado justo antes de volver a la tónica.",
+    "subtónica: acorde de entrada típico antes de resolver en la tónica (cadencia VII-i muy "
+    "común en rock/pop).",
+]
+
+
+def harmonic_circle_minor(key_root_pc: int) -> list[tuple[str, str, str]]:
+    """Los 7 acordes diatónicos de una tonalidad menor natural, listos para
+    mostrar en /circulo: [(numeral romano, acorde, para qué sirve), ...]."""
+    chords = [
+        format_chord(key_root_pc + MINOR_SCALE_STEPS[i], DEGREE_QUALITY_MINOR[i]) for i in range(7)
+    ]
+    return list(zip(DEGREE_ROMAN_MINOR, chords, DEGREE_FUNCTION_MINOR))
+
+
 def build_progression_ext(key_root_pc: int, degree_qualities: list[tuple[int, str]]) -> list[str]:
     """Como build_progression, pero cada grado trae su propia calidad explícita
     (permite 7, maj7, m7, sus4 en vez de solo la tríada diatónica por defecto)."""

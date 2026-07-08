@@ -16,10 +16,12 @@ from ..theory import (
     CIRCLE_MAJOR_ORDER,
     COMMON_PROGRESSIONS,
     PROGRESSION_EXPLANATIONS,
+    RELATIVE_MINOR,
     build_progression,
     build_progression_ext,
     generate_question,
     harmonic_circle,
+    harmonic_circle_minor,
     random_bpm,
     random_strum_pattern,
     random_style_progression,
@@ -116,29 +118,42 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.effective_message.reply_text(personality.HELP_TEXT, parse_mode="Markdown")
 
 
-def _circulo_keyboard() -> InlineKeyboardMarkup:
-    """Un botón por tonalidad mayor (mismo orden que el círculo de quintas de la
-    imagen), en grid de 4 columnas. callback_data lleva directo la pitch class."""
+def _circulo_keyboard(mode: str = "M") -> InlineKeyboardMarkup:
+    """Un botón por tonalidad (mayor o menor, según `mode`), mismo orden que el
+    círculo de quintas de la imagen, en grid de 4 columnas. callback_data lleva
+    la pitch class y el modo: "circ|{root_pc}|{mode}". Al final se agrega un
+    botón para alternar entre tonalidades mayores y menores."""
     rows = []
     row = []
-    for key in CIRCLE_MAJOR_ORDER:
+    labels = CIRCLE_MAJOR_ORDER if mode == "M" else RELATIVE_MINOR
+    for key in labels:
         root_pc, _, _ = parse_chord(key)
-        row.append(InlineKeyboardButton(key, callback_data=f"circ|{root_pc}"))
+        row.append(InlineKeyboardButton(key, callback_data=f"circ|{root_pc}|{mode}"))
         if len(row) == 4:
             rows.append(row)
             row = []
     if row:
         rows.append(row)
+    other_mode = "m" if mode == "M" else "M"
+    toggle_label = "🔁 Ver tonalidades menores" if mode == "M" else "🔁 Ver tonalidades mayores"
+    rows.append([InlineKeyboardButton(toggle_label, callback_data=f"circmode|{other_mode}")])
     return InlineKeyboardMarkup(rows)
 
 
-def _circulo_armonico_text(root_pc: int) -> str:
-    key_name = NOTE_NAMES[root_pc]
+def _circulo_armonico_text(root_pc: int, mode: str = "M") -> str:
+    if mode == "M":
+        key_name = NOTE_NAMES[root_pc]
+        circle = harmonic_circle(root_pc)
+        title = f"🎼 *Círculo armónico de {key_name} mayor*"
+    else:
+        key_name = f"{NOTE_NAMES[root_pc]}m"
+        circle = harmonic_circle_minor(root_pc)
+        title = f"🎼 *Círculo armónico de {key_name} (menor natural)*"
     lines = [
-        f"🎼 *Círculo armónico de {key_name} mayor*",
+        title,
         "Estos son los acordes que combinan naturalmente en esta tonalidad:\n",
     ]
-    for roman, chord, function in harmonic_circle(root_pc):
+    for roman, chord, function in circle:
         lines.append(f"*{roman}* → `{chord}` — {function}")
     lines.append("\nToca otra tonalidad para verla.")
     return "\n".join(lines)
@@ -151,8 +166,9 @@ async def circulo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.effective_message.reply_photo(
             photo=f,
             caption="🎼 Círculo de quintas. Toca una tonalidad para ver su círculo armónico "
-            "(los acordes que combinan en esa tonalidad y para qué sirve cada uno).",
-            reply_markup=_circulo_keyboard(),
+            "(los acordes que combinan en esa tonalidad y para qué sirve cada uno). "
+            "También puedes ver las tonalidades menores.",
+            reply_markup=_circulo_keyboard("M"),
         )
 
 
@@ -160,10 +176,31 @@ async def circulo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def circulo_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    _, root_pc_s = query.data.split("|")
+    _, root_pc_s, mode = query.data.split("|")
     root_pc = int(root_pc_s)
-    text = _circulo_armonico_text(root_pc)
-    await query.edit_message_caption(caption=text, parse_mode="Markdown", reply_markup=_circulo_keyboard())
+    text = _circulo_armonico_text(root_pc, mode)
+    await query.edit_message_caption(
+        caption=text, parse_mode="Markdown", reply_markup=_circulo_keyboard(mode)
+    )
+
+
+@_allowed
+async def circulo_mode_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    _, mode = query.data.split("|")
+    caption = (
+        "🎼 Círculo de quintas. Toca una tonalidad para ver su círculo armónico "
+        "(los acordes que combinan en esa tonalidad y para qué sirve cada uno). "
+        "También puedes ver las tonalidades mayores."
+        if mode == "m"
+        else "🎼 Círculo de quintas. Toca una tonalidad para ver su círculo armónico "
+        "(los acordes que combinan en esa tonalidad y para qué sirve cada uno). "
+        "También puedes ver las tonalidades menores."
+    )
+    await query.edit_message_caption(
+        caption=caption, reply_markup=_circulo_keyboard(mode)
+    )
 
 
 def _practicar_header(

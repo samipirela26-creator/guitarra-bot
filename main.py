@@ -9,6 +9,7 @@ from src.bot.handlers import (
     canciones_command,
     circulo_callback,
     circulo_command,
+    circulo_mode_callback,
     help_command,
     practicar_build_callback,
     practicar_command,
@@ -58,6 +59,7 @@ def main() -> None:
     app.add_handler(CallbackQueryHandler(cancion_callback, pattern=r"^song\|"))
     app.add_handler(CallbackQueryHandler(cancion_build_callback, pattern=r"^cbld\|"))
     app.add_handler(CallbackQueryHandler(circulo_callback, pattern=r"^circ\|"))
+    app.add_handler(CallbackQueryHandler(circulo_mode_callback, pattern=r"^circmode\|"))
 
     logger.info("Trivilín está en línea 🐶🎷🎸")
     app.run_polling()
