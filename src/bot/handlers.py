@@ -542,25 +542,90 @@ async def estilo_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
+# Rutina adaptativa según el tiempo disponible (no un horario fijo): pensada para
+# guitarristas de iglesia que ya saben tocar el repertorio pero les cuesta cambiar
+# de tono y ser constantes. /sesion pregunta primero cuánto tiempo hay (antes era
+# fija, ~25-30 min, y /plan era el comando aparte que preguntaba el tiempo — el
+# usuario esperaba que /sesion mismo lo hiciera, así que ahora /plan es un alias
+# del mismo flujo). Cada nivel prioriza el cambio de tono y siempre cierra
+# recordando revisar la racha en /puntaje (el "no rompas la cadena" de los hábitos).
+_SESION_TIER_LABELS = {
+    "corto": "⏱️ Poco tiempo (5-10 min)",
+    "normal": "🕐 Tiempo normal (15-20 min)",
+    "largo": "⏳ Tengo tiempo (30-45 min)",
+}
+
+
+def _sesion_tier_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        [[InlineKeyboardButton(label, callback_data=f"sestier|{key}")] for key, label in _SESION_TIER_LABELS.items()]
+    )
+
+
 @_allowed
 async def sesion_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.effective_message.reply_text(
+        f"{personality.SESSION_INTRO}\n\n¿Cuánto tiempo tiene hoy, patrón?",
+        parse_mode="Markdown",
+        reply_markup=_sesion_tier_keyboard(),
+    )
+
+
+async def _send_sesion_content(message, tier: str) -> None:
+    """Arma y envía la rutina real según el tiempo elegido — usado tanto por
+    /sesion como por /plan (mismo flujo, /plan es un alias)."""
     songs = load_songs()
     song = random.choice(songs)
     # Todos los acordes reales de la canción — antes se cortaba a los primeros 6,
-    # lo que dejaba canciones como "Gracias, Dios" (15 acordes únicos) incompletas
-    # tanto en el texto como en la tarjeta de práctica. A diferencia de /canciones,
-    # aquí no hay un picker con callback_data que limite el total (es solo texto +
-    # una foto de referencia), así que no hace falta ningún tope.
+    # lo que dejaba canciones como "Gracias, Dios" (15 acordes únicos) incompletas.
+    # Aquí no hay un picker con callback_data que limite el total, así que no hace
+    # falta ningún tope.
     chords = song["unique_chords"]
     bpm = random_bpm()
     strum_name, strum_pattern = random_strum_pattern()
-
+    pair_a, pair_b = (chords[0], chords[1]) if len(chords) >= 2 else (chords[0], chords[0])
     warmup = random.choice(personality.WARMUP_EXERCISES)
     technique = random.choice(personality.TECHNIQUE_TIPS)
-    pair_a, pair_b = (chords[0], chords[1]) if len(chords) >= 2 else (chords[0], chords[0])
 
+    if tier == "corto":
+        text = (
+            "⏱️ *Día apurado (5-10 min), patrón*\n\n"
+            "1️⃣ *Calentamiento* (2 min)\n"
+            f"{warmup}\n\n"
+            "2️⃣ *Cambios de acorde* (5-8 min)\n"
+            f"Alterne `{pair_a}` ↔ `{pair_b}` con metrónomo. Empiece lento, suba el "
+            "tempo solo cuando el cambio salga limpio. Este es su ejercicio "
+            "prioritario (el cambio de tono); no lo deje de lado aunque el día "
+            "esté corto.\n\n"
+            "✅ Con esto ya cumplió el día. Revise su racha en /puntaje. 🐾"
+        )
+        await message.reply_text(text, parse_mode="Markdown")
+        return
+
+    if tier == "normal":
+        text = (
+            "🕐 *Día normal (15-20 min), patrón*\n\n"
+            "1️⃣ *Calentamiento* (3 min)\n"
+            f"{warmup}\n\n"
+            "2️⃣ *Cambios de acorde* (5-8 min)\n"
+            f"Alterne `{pair_a}` ↔ `{pair_b}` con metrónomo, pensando el numeral "
+            "romano (I, IV, V...) de cada acorde antes que el nombre de la nota.\n\n"
+            f"3️⃣ *Canción real: {song['title']}* (7-10 min)\n"
+            f"Estos acordes en *{bpm} BPM*, patrón, practíquelos de oído:\n"
+            f"`{' - '.join(chords)}`\n\n"
+            "✅ Revise su racha en /puntaje. 🐾"
+        )
+        await message.reply_text(text, parse_mode="Markdown")
+        img = build_practice_card(chords, bpm, strum_name, strum_pattern, title=song["title"])
+        await message.reply_photo(
+            photo=_image_to_bytes(img),
+            caption=f"🎵 {song['title']} en {song['tono']} — {bpm} BPM, rasgueo {strum_name}.",
+        )
+        return
+
+    # "largo": la rutina completa, con círculo de quintas y tarjeta de práctica.
     text = (
-        f"{personality.SESSION_INTRO}\n\n"
+        "⏳ *Día con tiempo (30-45 min), patrón*\n\n"
         "1️⃣ *Calentamiento* (5 min)\n"
         f"{warmup}\n\n"
         "2️⃣ *Cambios de acorde* (5-8 min)\n"
@@ -570,88 +635,40 @@ async def sesion_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"{technique}\n\n"
         f"4️⃣ *Canción real: {song['title']}* (10-15 min)\n"
         f"Tome este círculo armónico con estos acordes en *{bpm} BPM*, patrón, y practíquelos:\n"
-        f"`{' - '.join(chords)}`"
+        f"`{' - '.join(chords)}`\n\n"
+        "➡️ Si le queda tiempo extra, sume /practicar enfocado solo en cambios de tono.\n\n"
+        "✅ Revise su racha en /puntaje, patrón — y recuerde: si un día no toca, no "
+        "pasa nada, pero al día siguiente sí o sí (nunca falle dos veces seguidas, "
+        "que la constancia también es un fruto del Espíritu). 🐾"
     )
-    await update.effective_message.reply_text(text, parse_mode="Markdown")
+    await message.reply_text(text, parse_mode="Markdown")
 
     circle_path = get_or_create_circle_image(str(ASSETS_DIR))
     with open(circle_path, "rb") as f:
-        await update.effective_message.reply_photo(photo=f, caption="🎼 Círculo de quintas de referencia.")
+        await message.reply_photo(photo=f, caption="🎼 Círculo de quintas de referencia.")
 
     img = build_practice_card(chords, bpm, strum_name, strum_pattern, title=song["title"])
-    await update.effective_message.reply_photo(
+    await message.reply_photo(
         photo=_image_to_bytes(img),
         caption=f"🎵 {song['title']} en {song['tono']} — {bpm} BPM, rasgueo {strum_name}.",
     )
 
 
-# Rutina adaptativa según el tiempo disponible (no un horario fijo): pensada para
-# guitarristas de iglesia que ya saben tocar el repertorio pero les cuesta cambiar
-# de tono y ser constantes. Cada nivel prioriza /practicar (el ejercicio correctivo
-# para el cambio de tono: pensar en numerales romanos en vez de nombres de nota,
-# el mismo "Sistema Nashville" que usan las bandas de adoración) y siempre cierra
-# recordando revisar la racha en /puntaje (el "no rompas la cadena" de los hábitos).
-_PLAN_INTRO = (
-    "🐶🎷 *¿Cuánto tiempo tiene hoy, patrón?*\n"
-    "Ni yo, con el saxo, practico igual todos los días — dígame cuánto tiene y le "
-    "armo la rutina a la medida. Que nunca falte usted un día entero, aunque sea "
-    "con la versión breve, es lo que cuenta ante el Señor:"
-)
-
-_PLAN_TIERS = {
-    "corto": (
-        "⏱️ Poco tiempo (5-10 min)",
-        "⏱️ *Día apurado (5-10 min)*\n\n"
-        "1️⃣ 2 min de calentamiento: /tarjeta o /estilo → Adoración.\n"
-        "2️⃣ 5-8 min: /practicar — arme 2-3 progresiones de transposición. Este es "
-        "su ejercicio prioritario (el cambio de tono); no lo deje de lado aunque "
-        "el día esté corto.\n\n"
-        "✅ Con esto ya cumplió el día, patrón. Revise su racha en /puntaje. 🐾",
-    ),
-    "normal": (
-        "🕐 Tiempo normal (15-20 min)",
-        "🕐 *Día normal (15-20 min)*\n\n"
-        "1️⃣ 3 min calentamiento: /tarjeta.\n"
-        "2️⃣ 8-10 min: /practicar + /circulo — toque la tonalidad que le salga y "
-        "piense el numeral romano (I, IV, V...) de cada acorde antes que el "
-        "nombre de la nota.\n"
-        "3️⃣ 5-7 min: una canción real con /canciones o /letra, intentando "
-        "transportarla de oído.\n\n"
-        "✅ Revise su racha en /puntaje. 🐾",
-    ),
-    "largo": (
-        "⏳ Tengo tiempo (30-45 min)",
-        "⏳ *Día con tiempo (30-45 min)*\n\n"
-        "1️⃣ Corra /sesion completo (calentamiento → cambios de acorde → técnica "
-        "→ canción real).\n"
-        "2️⃣ +10 min extra de /practicar, enfocado solo en cambios de tono.\n\n"
-        "✅ Revise su racha en /puntaje, patrón — y recuerde: si un día no toca, "
-        "no pasa nada, pero al día siguiente sí o sí (nunca falle dos veces "
-        "seguidas, que la constancia también es un fruto del Espíritu). 🐾",
-    ),
-}
-
-
-def _plan_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        [[InlineKeyboardButton(label, callback_data=f"plan|{key}")] for key, (label, _text) in _PLAN_TIERS.items()]
-    )
+@_allowed
+async def sesion_tier_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    _, tier = query.data.split("|")
+    label = _SESION_TIER_LABELS.get(tier, "")
+    await query.edit_message_text(f"{label} — armando su rutina, patrón... 🎸")
+    await _send_sesion_content(query.message, tier)
 
 
 @_allowed
 async def plan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.effective_message.reply_text(
-        _PLAN_INTRO, parse_mode="Markdown", reply_markup=_plan_keyboard()
-    )
-
-
-@_allowed
-async def plan_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    _, tier = query.data.split("|")
-    _label, text = _PLAN_TIERS[tier]
-    await query.edit_message_text(text, parse_mode="Markdown", reply_markup=_plan_keyboard())
+    # /plan es un alias de /sesion: el usuario esperaba que /sesion preguntara el
+    # tiempo disponible, así que ambos comandos comparten hoy el mismo flujo.
+    await sesion_command(update, context)
 
 
 @_allowed

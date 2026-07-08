@@ -39,15 +39,15 @@ HELP_TEXT = (
     "para su ensayo.\n"
     "/estilo — elija un género (rock, pop, jazz, merengue...) y le armo una "
     "progresión, tono y ritmo propios de ese estilo.\n"
-    "/sesion — una rutina completa para hoy: calentamiento, cambios de acorde, "
-    "técnica y una canción real con su círculo armónico y tempo.\n"
-    "/plan — *esta es la que pregunta cuánto tiempo tiene usted hoy* y le arma "
-    "una rutina a la medida (corta, normal o larga). Si no sabe por dónde "
-    "comenzar, patrón, empiece aquí.\n"
+    "/sesion — *le pregunto cuánto tiempo tiene hoy* y le armo la rutina completa "
+    "a la medida (corta, normal o larga): calentamiento, cambios de acorde, "
+    "técnica y una canción real. Si no sabe por dónde comenzar, patrón, empiece "
+    "aquí.\n"
+    "/plan — alias de /sesion, el mismo flujo.\n"
     "/puntaje — su racha y sus aciertos.\n\n"
     "🐾 Consejo: /practicar es el juego veloz sin preguntas, para cuando está "
-    "usted esperando algo. /plan es la rutina meditada, la que sí pregunta el "
-    "tiempo disponible."
+    "usted esperando algo. /sesion (o /plan) es la rutina meditada, la que sí "
+    "pregunta el tiempo disponible."
 )
 
 WARMUP_EXERCISES = [
