@@ -39,7 +39,6 @@ def build_practice_card(
 
     font_title = _load_font(28)
     font_sub = _load_font(20, bold=False)
-    font_arrow = _load_font(30)
     font_label = _load_font(16, bold=False)
 
     draw.text((width / 2, _PADDING), title, font=font_title, fill="black", anchor="ma")
@@ -55,19 +54,24 @@ def build_practice_card(
         img.paste(diagram, (x, y_diagrams))
         x += diagram_w + _GAP_BETWEEN_DIAGRAMS
 
+    # El mismo patrón de UN compás se repite igual bajo cada acorde (así lo
+    # enseñan los métodos de guitarra: un compás de rasgueo por acorde), en
+    # vez de repartir todo el patrón de una sola vez a lo ancho de la tarjeta.
     y_strum = y_diagrams + diagram_h + 16
-    draw.text((_PADDING, y_strum), "Patrón:", font=font_label, fill="black", anchor="lm")
-
-    arrow_area_left = _PADDING + 70
-    arrow_area_width = width - arrow_area_left - _PADDING
-    step = arrow_area_width / max(len(strum_pattern), 1)
-    for i, hit in enumerate(strum_pattern):
-        cx = arrow_area_left + step * i + step / 2
-        draw.text((cx, y_strum), _ARROW.get(hit, "?"), font=font_arrow, fill="black", anchor="mm")
+    n_hits = max(len(strum_pattern), 1)
+    arrow_size = max(12, min(30, int(diagram_w / n_hits * 0.85)))
+    font_arrow_fit = _load_font(arrow_size)
+    step = diagram_w / n_hits
+    x = _PADDING
+    for _diagram in diagrams:
+        for i, hit in enumerate(strum_pattern):
+            cx = x + step * i + step / 2
+            draw.text((cx, y_strum), _ARROW.get(hit, "?"), font=font_arrow_fit, fill="black", anchor="mm")
+        x += diagram_w + _GAP_BETWEEN_DIAGRAMS
 
     draw.text(
         (width / 2, height - _PADDING),
-        "repite el patrón una vez por cada acorde",
+        "Patrón: repite lo mismo en cada acorde (un compás por acorde)",
         font=font_label, fill="gray", anchor="ms",
     )
 

@@ -389,7 +389,7 @@ async def tarjeta_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     key_root = random.randrange(12)
     chords = build_progression_ext(key_root, degree_qualities)
     bpm = random_bpm()
-    strum_name, strum_pattern = random_strum_pattern()
+    strum_name, strum_pattern = random_strum_pattern(style=style)
 
     title = f"{name} ({style}) en {NOTE_NAMES[key_root]}"
     img = build_practice_card(chords, bpm, strum_name, strum_pattern, title=title)
