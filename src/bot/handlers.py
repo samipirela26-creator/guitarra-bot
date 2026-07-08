@@ -3,11 +3,12 @@ import logging
 import random
 from functools import wraps
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto, Update
 from telegram.ext import ContextTypes
 
 from .. import db, personality
 from ..config import ALLOWED_USER_IDS, ASSETS_DIR
+from ..graphics.chord_row import build_chord_row
 from ..graphics.circle_image import get_or_create_circle_image
 from ..graphics.practice_card import build_practice_card
 from ..songs.library import load_songs
@@ -17,6 +18,7 @@ from ..theory import (
     COMMON_PROGRESSIONS,
     PROGRESSION_EXPLANATIONS,
     RELATIVE_MINOR,
+    STYLE_PROGRESSIONS,
     build_progression,
     build_progression_ext,
     generate_question,
@@ -140,7 +142,8 @@ def _circulo_keyboard(mode: str = "M") -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(rows)
 
 
-def _circulo_armonico_text(root_pc: int, mode: str = "M") -> str:
+def _circulo_armonico(root_pc: int, mode: str = "M") -> tuple[str, str, list[tuple[str, str, str]]]:
+    """Devuelve (nombre de la tonalidad, título, círculo armónico) para el modo pedido."""
     if mode == "M":
         key_name = NOTE_NAMES[root_pc]
         circle = harmonic_circle(root_pc)
@@ -149,6 +152,11 @@ def _circulo_armonico_text(root_pc: int, mode: str = "M") -> str:
         key_name = f"{NOTE_NAMES[root_pc]}m"
         circle = harmonic_circle_minor(root_pc)
         title = f"🎼 *Círculo armónico de {key_name} (menor natural)*"
+    return key_name, title, circle
+
+
+def _circulo_armonico_text(root_pc: int, mode: str = "M") -> str:
+    _key_name, title, circle = _circulo_armonico(root_pc, mode)
     lines = [
         title,
         "Estos son los acordes que combinan naturalmente en esta tonalidad:\n",
@@ -178,9 +186,18 @@ async def circulo_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     _, root_pc_s, mode = query.data.split("|")
     root_pc = int(root_pc_s)
+    key_name, _title, circle = _circulo_armonico(root_pc, mode)
     text = _circulo_armonico_text(root_pc, mode)
     await query.edit_message_caption(
         caption=text, parse_mode="Markdown", reply_markup=_circulo_keyboard(mode)
+    )
+
+    labels = [roman for roman, _chord, _function in circle]
+    chords = [chord for _roman, chord, _function in circle]
+    img = build_chord_row(chords, labels, title=f"Acordes de {key_name}")
+    await query.message.reply_photo(
+        photo=_image_to_bytes(img),
+        caption=f"🎸 Los 7 acordes de {key_name} para tocar mientras miras el círculo armónico.",
     )
 
 
@@ -419,7 +436,7 @@ async def tarjeta_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     style, name, degree_qualities = random_style_progression()
     key_root = random.randrange(12)
     chords = build_progression_ext(key_root, degree_qualities)
-    bpm = random_bpm()
+    bpm = random_bpm(style=style)
     strum_name, strum_pattern = random_strum_pattern(style=style)
 
     title = f"{name} ({style}) en {NOTE_NAMES[key_root]}"
@@ -429,6 +446,79 @@ async def tarjeta_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         photo=_image_to_bytes(img),
         caption=caption,
     )
+
+
+def _estilo_keyboard() -> InlineKeyboardMarkup:
+    """Un botón por estilo musical (ver theory.progressions.STYLE_PROGRESSIONS),
+    en grid de 2 columnas. callback_data: "estl|{estilo}"."""
+    rows = []
+    row = []
+    for style in STYLE_PROGRESSIONS:
+        row.append(InlineKeyboardButton(style, callback_data=f"estl|{style}"))
+        if len(row) == 2:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    return InlineKeyboardMarkup(rows)
+
+
+def _estilo_result_keyboard(style: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        [
+            [InlineKeyboardButton("🔄 Otra progresión", callback_data=f"estl|{style}")],
+            [InlineKeyboardButton("🎵 Cambiar de estilo", callback_data="estlmenu")],
+        ]
+    )
+
+
+@_allowed
+async def estilo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.effective_message.reply_text(
+        "🎸 Elige un estilo y te armo una progresión, tono y ritmo típicos de ese "
+        "género para practicar:",
+        reply_markup=_estilo_keyboard(),
+    )
+
+
+@_allowed
+async def estilo_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == "estlmenu":
+        await query.message.reply_text(
+            "🎸 Elige un estilo y te armo una progresión, tono y ritmo típicos de ese "
+            "género para practicar:",
+            reply_markup=_estilo_keyboard(),
+        )
+        return
+
+    _, style = query.data.split("|")
+    name, degree_qualities = random.choice(STYLE_PROGRESSIONS[style])
+    key_root = random.randrange(12)
+    chords = build_progression_ext(key_root, degree_qualities)
+    bpm = random_bpm(style=style)
+    strum_name, strum_pattern = random_strum_pattern(style=style)
+
+    title = f"{name} ({style}) en {NOTE_NAMES[key_root]}"
+    img = build_practice_card(chords, bpm, strum_name, strum_pattern, title=title)
+    caption = f"🎸 Estilo *{style}* — {title}.\nAcordes: `{' - '.join(chords)}`"
+    keyboard = _estilo_result_keyboard(style)
+
+    if query.message.photo:
+        # Ya veníamos de una tarjeta de este flujo (toque de "otra progresión" o
+        # de otro estilo): reemplaza la foto en el mismo mensaje, sin ensuciar el chat.
+        await query.edit_message_media(
+            media=InputMediaPhoto(_image_to_bytes(img), caption=caption, parse_mode="Markdown"),
+            reply_markup=keyboard,
+        )
+    else:
+        # Primer toque desde el menú de texto: no se puede convertir un mensaje de
+        # texto en foto, así que se manda una foto nueva.
+        await query.message.reply_photo(
+            photo=_image_to_bytes(img), caption=caption, parse_mode="Markdown", reply_markup=keyboard
+        )
 
 
 @_allowed

@@ -223,6 +223,19 @@ STYLE_PROGRESSIONS: dict[str, list[tuple[str, list[tuple[int, str]]]]] = {
         ("Imaj7 - vi7 - IVmaj7 - V7", [(0, "maj7"), (5, "m7"), (3, "maj7"), (4, "7")]),
         ("I - IVsus4 - IV - Vsus4", [(0, ""), (3, "sus4"), (3, ""), (4, "sus4")]),
     ],
+    # Merengue dominicano: armonía muy sencilla (casi siempre tríadas I-IV-V),
+    # lo característico es el ritmo rapidísimo de la güira/tambora, no la
+    # progresión — por eso se repiten pocos acordes en ciclos cortos y pegajosos.
+    "Merengue": [
+        ("I - IV - V - I", [(0, ""), (3, ""), (4, ""), (0, "")]),
+        ("I - V - I - IV", [(0, ""), (4, ""), (0, ""), (3, "")]),
+        ("I - IV - I - V", [(0, ""), (3, ""), (0, ""), (4, "")]),
+        ("vi - IV - V - I", [(5, "m"), (3, ""), (4, ""), (0, "")]),
+        ("I - V - vi - IV", [(0, ""), (4, ""), (5, "m"), (3, "")]),
+        ("I - IV - V - IV", [(0, ""), (3, ""), (4, ""), (3, "")]),
+        ("ii - V - I - IV", [(1, "m"), (4, ""), (0, ""), (3, "")]),
+        ("I - I - IV - V", [(0, ""), (0, ""), (3, ""), (4, "")]),
+    ],
 }
 
 

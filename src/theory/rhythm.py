@@ -27,6 +27,9 @@ STRUM_PATTERNS = [
     ("Shuffle", ["D", "-", "D", "U", "D", "-", "D", "U"]),
     # Comping de jazz: golpes cortos en tiempos débiles, espacioso.
     ("Jazz", ["-", "D", "-", "D", "-", "D", "-", "D"]),
+    # Merengue: corcheas continuas todas hacia abajo, muy rápidas y parejas
+    # (imita el pulso incesante de la güira/tambora), sin silencios.
+    ("Merengue", ["D", "D", "D", "D", "D", "D", "D", "D"]),
 ]
 
 # Qué patrones de rasgueo le quedan bien a cada estilo de /tarjeta (ver
@@ -41,9 +44,22 @@ STYLE_STRUM_NAMES: dict[str, list[str]] = {
     "Reggae": ["Contratiempo"],
     "Bachata": ["Sincopado"],
     "Adoración": ["Balada", "Popular", "Sincopado"],
+    "Merengue": ["Merengue"],
 }
 
 _BPM_CHOICES = list(range(60, 115, 5))
+
+# Rangos de tempo reales por estilo, para cuando /estilo pide un BPM propio del
+# género en vez del rango genérico de arriba (ej. el merengue se toca mucho más
+# rápido que un pop o una balada — 130-160 BPM es lo normal).
+STYLE_BPM_RANGES: dict[str, range] = {
+    "Merengue": range(130, 161, 5),
+    "Balada": range(60, 91, 5),
+    "Blues": range(70, 101, 5),
+    "Jazz": range(70, 121, 5),
+    "Reggae": range(70, 96, 5),
+    "Bachata": range(120, 151, 5),
+}
 
 
 def random_strum_pattern(
@@ -60,6 +76,9 @@ def random_strum_pattern(
     return rng.choice(pool)
 
 
-def random_bpm(rng: random.Random | None = None) -> int:
+def random_bpm(rng: random.Random | None = None, style: str | None = None) -> int:
+    """Elige un BPM al azar. Si se da `style` y tiene un rango propio en
+    STYLE_BPM_RANGES, usa ese rango en vez del genérico (60-110)."""
     rng = rng or random
-    return rng.choice(_BPM_CHOICES)
+    choices = STYLE_BPM_RANGES.get(style, _BPM_CHOICES) if style else _BPM_CHOICES
+    return rng.choice(list(choices))
