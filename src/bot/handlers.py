@@ -525,7 +525,12 @@ async def estilo_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def sesion_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     songs = load_songs()
     song = random.choice(songs)
-    chords = song["unique_chords"][:6]
+    # Todos los acordes reales de la canción — antes se cortaba a los primeros 6,
+    # lo que dejaba canciones como "Gracias, Dios" (15 acordes únicos) incompletas
+    # tanto en el texto como en la tarjeta de práctica. A diferencia de /canciones,
+    # aquí no hay un picker con callback_data que limite el total (es solo texto +
+    # una foto de referencia), así que no hace falta ningún tope.
+    chords = song["unique_chords"]
     bpm = random_bpm()
     strum_name, strum_pattern = random_strum_pattern()
 
