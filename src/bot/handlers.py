@@ -13,11 +13,13 @@ from ..graphics.practice_card import build_practice_card
 from ..songs.library import load_songs
 from ..songs.practice import generate_song_question, song_origin_chords
 from ..theory import (
+    CIRCLE_MAJOR_ORDER,
     COMMON_PROGRESSIONS,
     PROGRESSION_EXPLANATIONS,
     build_progression,
     build_progression_ext,
     generate_question,
+    harmonic_circle,
     random_bpm,
     random_strum_pattern,
     random_style_progression,
@@ -114,11 +116,54 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.effective_message.reply_text(personality.HELP_TEXT, parse_mode="Markdown")
 
 
+def _circulo_keyboard() -> InlineKeyboardMarkup:
+    """Un botón por tonalidad mayor (mismo orden que el círculo de quintas de la
+    imagen), en grid de 4 columnas. callback_data lleva directo la pitch class."""
+    rows = []
+    row = []
+    for key in CIRCLE_MAJOR_ORDER:
+        root_pc, _, _ = parse_chord(key)
+        row.append(InlineKeyboardButton(key, callback_data=f"circ|{root_pc}"))
+        if len(row) == 4:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    return InlineKeyboardMarkup(rows)
+
+
+def _circulo_armonico_text(root_pc: int) -> str:
+    key_name = NOTE_NAMES[root_pc]
+    lines = [
+        f"🎼 *Círculo armónico de {key_name} mayor*",
+        "Estos son los acordes que combinan naturalmente en esta tonalidad:\n",
+    ]
+    for roman, chord, function in harmonic_circle(root_pc):
+        lines.append(f"*{roman}* → `{chord}` — {function}")
+    lines.append("\nToca otra tonalidad para verla.")
+    return "\n".join(lines)
+
+
 @_allowed
 async def circulo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     path = get_or_create_circle_image(str(ASSETS_DIR))
     with open(path, "rb") as f:
-        await update.effective_message.reply_photo(photo=f, caption="🎼 Círculo de quintas")
+        await update.effective_message.reply_photo(
+            photo=f,
+            caption="🎼 Círculo de quintas. Toca una tonalidad para ver su círculo armónico "
+            "(los acordes que combinan en esa tonalidad y para qué sirve cada uno).",
+            reply_markup=_circulo_keyboard(),
+        )
+
+
+@_allowed
+async def circulo_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    _, root_pc_s = query.data.split("|")
+    root_pc = int(root_pc_s)
+    text = _circulo_armonico_text(root_pc)
+    await query.edit_message_caption(caption=text, parse_mode="Markdown", reply_markup=_circulo_keyboard())
 
 
 def _practicar_header(

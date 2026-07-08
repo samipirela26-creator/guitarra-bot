@@ -7,6 +7,7 @@ from .progressions import (
     build_progression,
     build_progression_ext,
     generate_question,
+    harmonic_circle,
     random_style_progression,
 )
 from .rhythm import random_bpm, random_strum_pattern
@@ -24,6 +25,7 @@ __all__ = [
     "STYLE_PROGRESSIONS",
     "build_progression",
     "build_progression_ext",
+    "harmonic_circle",
     "random_style_progression",
     "random_bpm",
     "random_strum_pattern",

@@ -7,6 +7,22 @@ from .notes import NOTE_NAMES, format_chord, transpose_progression
 MAJOR_SCALE_STEPS = [0, 2, 4, 5, 7, 9, 11]
 # Calidad del acorde diatónico para cada grado (I..vii). '' = mayor.
 DEGREE_QUALITY = ["", "m", "m", "", "", "m", "dim"]
+# Numeral romano de cada grado, mismo índice que DEGREE_QUALITY/MAJOR_SCALE_STEPS.
+DEGREE_ROMAN = ["I", "ii", "iii", "IV", "V", "vi", "vii°"]
+
+# Para qué sirve cada grado dentro de la tonalidad (función armónica), en términos
+# simples — usado por /circulo cuando el usuario toca una tonalidad para ver su
+# "círculo armónico" completo (los 7 acordes diatónicos con los que puede
+# acompañar/componer en esa tonalidad).
+DEGREE_FUNCTION = [
+    "tónica: el acorde de \"casa\", ahí descansa la canción.",
+    "subdominante suave: prepara el camino hacia la dominante (la cadencia ii-V-I).",
+    "mediante: comparte notas con la tónica, la sustituye con un color más melancólico.",
+    "subdominante: se aleja de la tónica, genera una tensión leve antes de ir a la dominante.",
+    "dominante: la máxima tensión de la escala, empuja con fuerza a resolver en la tónica (I).",
+    "relativa menor: mismas notas que la tónica pero en menor, funciona como una tónica alternativa y más triste.",
+    "sensible: casi siempre resuelve rápido hacia la tónica (I), poco usado solo.",
+]
 
 # (nombre en números romanos, grados usados, para mostrar en la pregunta)
 COMMON_PROGRESSIONS = [
@@ -72,6 +88,13 @@ def build_progression(key_root_pc: int, degrees: list[int]) -> list[str]:
         quality = DEGREE_QUALITY[degree]
         chords.append(format_chord(key_root_pc + interval, quality))
     return chords
+
+
+def harmonic_circle(key_root_pc: int) -> list[tuple[str, str, str]]:
+    """Los 7 acordes diatónicos de una tonalidad mayor, listos para mostrar en
+    /circulo: [(numeral romano, acorde, para qué sirve), ...]."""
+    chords = build_progression(key_root_pc, list(range(7)))
+    return list(zip(DEGREE_ROMAN, chords, DEGREE_FUNCTION))
 
 
 def build_progression_ext(key_root_pc: int, degree_qualities: list[tuple[int, str]]) -> list[str]:
