@@ -41,6 +41,60 @@ def format_chord(pitch_class: int, quality: str, bass_pitch_class: int | None = 
     return text
 
 
+# --- Deletreo enarmónico según la tonalidad -----------------------------------
+# NOTE_NAMES fija una sola ortografía por clase de altura (Db, Eb, F#, Ab, Bb),
+# lo cual es cómodo pero enarmónicamente incorrecto dentro de una tonalidad: en
+# Si mayor el ii grado debe ser C#m, no Dbm. Estas utilidades deletrean cada
+# grado de una escala usando cada letra (A-G) UNA sola vez a partir de la tónica,
+# que es la regla correcta de la notación diatónica.
+_LETTER_PC = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
+_LETTERS = ["C", "D", "E", "F", "G", "A", "B"]
+
+
+def _spell_pc(pitch_class: int, letter: str) -> str:
+    """Deletrea una clase de altura forzando cierta letra (A-G), añadiendo los
+    sostenidos/bemoles que hagan falta. Ej: _spell_pc(1, 'C') -> 'C#',
+    _spell_pc(1, 'D') -> 'Db', _spell_pc(5, 'E') -> 'E#'."""
+    diff = (pitch_class - _LETTER_PC[letter]) % 12
+    if diff > 6:
+        diff -= 12  # queda en el rango -5..6 (bemoles negativos, sostenidos positivos)
+    if diff == 0:
+        return letter
+    return letter + ("#" * diff if diff > 0 else "b" * -diff)
+
+
+def diatonic_spelling(tonic_name: str, scale_steps: list[int]) -> dict[int, str]:
+    """Mapa {clase de altura: nombre correctamente deletreado} para cada grado de
+    la escala que arranca en `tonic_name` (ej. 'F#', 'Eb'). Usa cada letra A-G una
+    sola vez. Las notas fuera de la escala NO están en el mapa; el llamador debe
+    caer de vuelta a NOTE_NAMES para ellas."""
+    if tonic_name not in _NOTE_TO_PC:
+        raise ValueError(f"Tónica desconocida: {tonic_name!r}")
+    start = _LETTERS.index(tonic_name[0])
+    tonic_pc = _NOTE_TO_PC[tonic_name]
+    mapping: dict[int, str] = {}
+    for i, step in enumerate(scale_steps):
+        pc = (tonic_pc + step) % 12
+        mapping[pc] = _spell_pc(pc, _LETTERS[(start + i) % 7])
+    return mapping
+
+
+def format_chord_in_key(
+    pitch_class: int,
+    quality: str,
+    spelling: dict[int, str],
+    bass_pitch_class: int | None = None,
+) -> str:
+    """Como format_chord, pero usa el deletreo de `spelling` (ver diatonic_spelling)
+    para las notas dentro de la tonalidad, cayendo a NOTE_NAMES para el resto."""
+    root = spelling.get(pitch_class % 12, NOTE_NAMES[pitch_class % 12])
+    text = f"{root}{quality}"
+    if bass_pitch_class is not None:
+        bass = spelling.get(bass_pitch_class % 12, NOTE_NAMES[bass_pitch_class % 12])
+        text += f"/{bass}"
+    return text
+
+
 def transpose_chord(chord: str, semitones: int) -> str:
     pc, quality, bass_pc = parse_chord(chord)
     new_bass = None if bass_pc is None else bass_pc + semitones

@@ -1,5 +1,12 @@
-from .circle import CIRCLE_MAJOR_ORDER, RELATIVE_MINOR
-from .notes import format_chord, parse_chord, transpose_chord, transpose_progression
+from .circle import CIRCLE_MAJOR_ORDER, MINOR_KEY_NAMES, RELATIVE_MINOR
+from .notes import (
+    diatonic_spelling,
+    format_chord,
+    format_chord_in_key,
+    parse_chord,
+    transpose_chord,
+    transpose_progression,
+)
 from .progressions import (
     COMMON_PROGRESSIONS,
     PROGRESSION_EXPLANATIONS,
@@ -15,8 +22,11 @@ from .rhythm import random_bpm, random_strum_pattern
 
 __all__ = [
     "CIRCLE_MAJOR_ORDER",
+    "MINOR_KEY_NAMES",
     "RELATIVE_MINOR",
+    "diatonic_spelling",
     "format_chord",
+    "format_chord_in_key",
     "parse_chord",
     "transpose_chord",
     "transpose_progression",

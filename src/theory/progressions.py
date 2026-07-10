@@ -2,7 +2,12 @@
 
 import random
 
-from .notes import NOTE_NAMES, format_chord, transpose_progression
+from .notes import (
+    NOTE_NAMES,
+    diatonic_spelling,
+    format_chord_in_key,
+    parse_chord,
+)
 
 MAJOR_SCALE_STEPS = [0, 2, 4, 5, 7, 9, 11]
 # Calidad del acorde diatónico para cada grado (I..vii). '' = mayor.
@@ -60,10 +65,10 @@ PROGRESSION_EXPLANATIONS = {
     ),
     "ii - V - I": (
         "La cadencia más importante del jazz (ii-V-I). El ii ya anticipa "
-        "la dominante (comparte dos notas con el V), el V genera la "
-        "tensión máxima (tiene la nota sensible que quiere subir a la "
-        "tónica) y el I resuelve todo. Es el motor armónico detrás de "
-        "casi cualquier estándar de jazz."
+        "la dominante (como tríadas comparten una nota; tocados con séptima "
+        "—ii7-V7— comparten dos), el V genera la tensión máxima (tiene la "
+        "nota sensible que quiere subir a la tónica) y el I resuelve todo. "
+        "Es el motor armónico detrás de casi cualquier estándar de jazz."
     ),
     "I - IV - I - V": (
         "Variante simple que refuerza la tónica (I) dos veces antes de "
@@ -82,11 +87,12 @@ PROGRESSION_EXPLANATIONS = {
 
 
 def build_progression(key_root_pc: int, degrees: list[int]) -> list[str]:
+    spelling = diatonic_spelling(NOTE_NAMES[key_root_pc], MAJOR_SCALE_STEPS)
     chords = []
     for degree in degrees:
         interval = MAJOR_SCALE_STEPS[degree]
         quality = DEGREE_QUALITY[degree]
-        chords.append(format_chord(key_root_pc + interval, quality))
+        chords.append(format_chord_in_key(key_root_pc + interval, quality, spelling))
     return chords
 
 
@@ -118,11 +124,17 @@ DEGREE_FUNCTION_MINOR = [
 ]
 
 
-def harmonic_circle_minor(key_root_pc: int) -> list[tuple[str, str, str]]:
+def harmonic_circle_minor(tonic_name: str) -> list[tuple[str, str, str]]:
     """Los 7 acordes diatónicos de una tonalidad menor natural, listos para
-    mostrar en /circulo: [(numeral romano, acorde, para qué sirve), ...]."""
+    mostrar en /circulo: [(numeral romano, acorde, para qué sirve), ...].
+    Recibe el NOMBRE de la tónica (ej. 'D#', 'Bb') y no solo la clase de altura,
+    porque el deletreo correcto depende de la ortografía elegida (D#m se deletrea
+    con sostenidos; Ebm, con bemoles)."""
+    spelling = diatonic_spelling(tonic_name, MINOR_SCALE_STEPS)
+    tonic_pc = parse_chord(tonic_name)[0]
     chords = [
-        format_chord(key_root_pc + MINOR_SCALE_STEPS[i], DEGREE_QUALITY_MINOR[i]) for i in range(7)
+        format_chord_in_key(tonic_pc + MINOR_SCALE_STEPS[i], DEGREE_QUALITY_MINOR[i], spelling)
+        for i in range(7)
     ]
     return list(zip(DEGREE_ROMAN_MINOR, chords, DEGREE_FUNCTION_MINOR))
 
@@ -130,18 +142,20 @@ def harmonic_circle_minor(key_root_pc: int) -> list[tuple[str, str, str]]:
 def build_progression_ext(key_root_pc: int, degree_qualities: list[tuple[int, str]]) -> list[str]:
     """Como build_progression, pero cada grado trae su propia calidad explícita
     (permite 7, maj7, m7, sus4 en vez de solo la tríada diatónica por defecto)."""
+    spelling = diatonic_spelling(NOTE_NAMES[key_root_pc], MAJOR_SCALE_STEPS)
     chords = []
     for degree, quality in degree_qualities:
         interval = MAJOR_SCALE_STEPS[degree]
-        chords.append(format_chord(key_root_pc + interval, quality))
+        chords.append(format_chord_in_key(key_root_pc + interval, quality, spelling))
     return chords
 
 
 # Progresiones agrupadas por estilo musical, con calidades explícitas (no solo
 # tríadas) para enriquecer las tarjetas de práctica (/tarjeta) más allá de los
 # acordes básicos. Cada entrada: (nombre en números romanos, [(grado, calidad), ...]).
-# Espacio combinatorio: 8 estilos × 8 progresiones × 12 tonalidades × 4 patrones
-# de rasgueo (ver theory.rhythm.STRUM_PATTERNS) = 3072 tarjetas distintas posibles.
+# Espacio combinatorio: 9 estilos, 8 progresiones cada uno, 12 tonalidades, y los patrones
+# de rasgueo que le quedan bien al estilo (ver STYLE_STRUM_NAMES en theory.rhythm) —
+# miles de tarjetas de práctica distintas posibles.
 STYLE_PROGRESSIONS: dict[str, list[tuple[str, list[tuple[int, str]]]]] = {
     "Pop": [
         ("I - V - vi - IV", [(0, ""), (4, ""), (5, "m"), (3, "")]),
@@ -263,8 +277,9 @@ def generate_question(rng: random.Random | None = None) -> dict:
     target_pc = _random_other_key(origin_pc, rng)
 
     origin_chords = build_progression(origin_pc, degrees)
-    semitones = (target_pc - origin_pc) % 12
-    correct_chords = transpose_progression(origin_chords, semitones)
+    # La respuesta se deletrea según la tonalidad DESTINO (build_progression es
+    # consciente de la tonalidad), no transponiendo la ortografía del origen.
+    correct_chords = build_progression(target_pc, degrees)
 
     return {
         "progression_name": name,

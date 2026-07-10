@@ -6,7 +6,15 @@ from .notes import NOTE_NAMES, parse_chord
 CIRCLE_MAJOR_ORDER = ["C", "G", "D", "A", "E", "B", "F#", "Db", "Ab", "Eb", "Bb", "F"]
 
 # Relativa menor de cada tonalidad mayor (mismo índice que CIRCLE_MAJOR_ORDER).
-RELATIVE_MINOR = ["Am", "Em", "Bm", "F#m", "C#m", "G#m", "Ebm", "Bbm", "Fm", "Cm", "Gm", "Dm"]
+# La relativa de F# mayor se deletrea D#m (con sostenidos) para ser consistente
+# con el resto del lado de sostenidos del círculo (C#m, G#m); su enarmónico Ebm
+# pertenecería al lado de bemoles.
+RELATIVE_MINOR = ["Am", "Em", "Bm", "F#m", "C#m", "G#m", "D#m", "Bbm", "Fm", "Cm", "Gm", "Dm"]
+
+# Nombre preferido de cada tonalidad menor por clase de altura (0-11), tomado del
+# deletreo de RELATIVE_MINOR. Se usa para mostrar y deletrear correctamente el
+# círculo armónico menor de /circulo (ej. pc 3 -> 'D#m', no 'Ebm').
+MINOR_KEY_NAMES = {parse_chord(name)[0]: name for name in RELATIVE_MINOR}
 
 
 def circle_position(pitch_class: int) -> int:

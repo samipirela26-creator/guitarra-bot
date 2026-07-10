@@ -16,11 +16,13 @@ from ..songs.practice import generate_song_question, song_origin_chords
 from ..theory import (
     CIRCLE_MAJOR_ORDER,
     COMMON_PROGRESSIONS,
+    MINOR_KEY_NAMES,
     PROGRESSION_EXPLANATIONS,
     RELATIVE_MINOR,
     STYLE_PROGRESSIONS,
     build_progression,
     build_progression_ext,
+    diatonic_spelling,
     generate_question,
     harmonic_circle,
     harmonic_circle_minor,
@@ -30,6 +32,7 @@ from ..theory import (
 )
 from ..theory.chord_shapes import CHORD_SHAPES, simplify_chord_name
 from ..theory.notes import NOTE_NAMES, parse_chord, semitone_distance, transpose_progression
+from ..theory.progressions import MAJOR_SCALE_STEPS
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +44,17 @@ logger = logging.getLogger(__name__)
 # /canciones usa el catálogo completo de 72 porque los acordes reales sí las traen.
 ALL_BASIC_CHORDS = sorted(NOTE_NAMES + [n + "m" for n in NOTE_NAMES])
 ALL_EXTENDED_CHORDS = sorted(CHORD_SHAPES.keys())
+
+
+def _basic_chords_for_key(target_pc: int) -> list[str]:
+    """Picker de tríadas (12 mayores + 12 menores) deletreado según la tonalidad
+    DESTINO: en Si mayor ofrece C#m/D#m/G#m (no Dbm/Ebm/Abm), igual que la
+    respuesta correcta que genera build_progression. Así el juego sigue siendo
+    ganable (los acordes correctos aparecen con el mismo deletreo) y sin botones
+    duplicados por enarmonía (una sola ortografía por clase de altura)."""
+    spelling = diatonic_spelling(NOTE_NAMES[target_pc], MAJOR_SCALE_STEPS)
+    names = [spelling.get(pc, NOTE_NAMES[pc]) for pc in range(12)]
+    return sorted(names + [n + "m" for n in names])
 
 # Sentinel que viaja como si fuera "el acorde tocado" en el callback_data, pero
 # en vez de agregarse a la selección hace que el handler borre el último acorde
@@ -149,8 +163,8 @@ def _circulo_armonico(root_pc: int, mode: str = "M") -> tuple[str, str, list[tup
         circle = harmonic_circle(root_pc)
         title = f"🎼 *Círculo armónico de {key_name} mayor*"
     else:
-        key_name = f"{NOTE_NAMES[root_pc]}m"
-        circle = harmonic_circle_minor(root_pc)
+        key_name = MINOR_KEY_NAMES.get(root_pc, f"{NOTE_NAMES[root_pc]}m")
+        circle = harmonic_circle_minor(key_name[:-1])
         title = f"🎼 *Círculo armónico de {key_name} (menor natural)*"
     return key_name, title, circle
 
@@ -253,7 +267,7 @@ def _practicar_question_msg() -> tuple[str, InlineKeyboardMarkup]:
     )
     text = header + f"\n\nArme la respuesta acorde por acorde (1/{total}):\n{_progress_line(total, [])}"
     prefix = f"pbld|{question['prog_idx']}|{question['origin_pc']}|{question['target_pc']}|"
-    markup = _chords_keyboard(ALL_BASIC_CHORDS, prefix, columns=4)
+    markup = _chords_keyboard(_basic_chords_for_key(question["target_pc"]), prefix, columns=4)
     return text, markup
 
 
@@ -302,7 +316,9 @@ async def practicar_build_callback(update: Update, context: ContextTypes.DEFAULT
             + _progress_line(total, selections)
         )
         prefix = f"pbld|{prog_idx}|{origin_pc}|{target_pc}|{new_sel_csv}"
-        markup = _chords_keyboard(ALL_BASIC_CHORDS, prefix, columns=4, show_undo=bool(selections))
+        markup = _chords_keyboard(
+            _basic_chords_for_key(target_pc), prefix, columns=4, show_undo=bool(selections)
+        )
         await query.edit_message_text(text, parse_mode="Markdown", reply_markup=markup)
         return
 

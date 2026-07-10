@@ -16,7 +16,10 @@ import random
 # Cada patrón es una secuencia de golpes por compás: 'D' = abajo, 'U' = arriba, '-' = silencio/no tocar.
 STRUM_PATTERNS = [
     ("Básico", ["D", "D", "D", "D"]),
-    ("Popular", ["D", "D", "U", "U", "D", "U"]),
+    # Compás completo de 8 corcheas: golpe abajo en cada tiempo (1-2-3-4) con un
+    # golpe arriba en cada contratiempo salvo el "y" del 1. Es el rasgueo pop/folk
+    # más común; el antiguo [D,D,U,U,D,U] quedaba a medio compás (6 corcheas).
+    ("Popular", ["D", "-", "D", "U", "D", "U", "D", "U"]),
     ("Balada", ["D", "-", "D", "U", "-", "U", "D", "U"]),
     ("Contratiempo", ["-", "U", "-", "U", "-", "U", "-", "U"]),
     # Figura 4-4 del libro: "abajo, abajo-arriba, abajo, abajo".
